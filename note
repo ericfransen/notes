@@ -19,10 +19,16 @@ CONFIG_FILE="$SCRIPT_DIR/config.sh"
 # The -vault command is special: it runs first and creates the config.
 if [[ "$1" == "-vault" ]]; then
     echo "Searching for Obsidian Vaults..."
-    mapfile -t vaults < <(find "$HOME" -type d -name ".obsidian" -not -path "*/Application Support/*" -not -path "*/.config/*" -exec dirname {} \; 2>/dev/null)
+    
+    # Use a temporary file for portability instead of mapfile (which is bash-only)
+    temp_vault_list=$(mktemp)
+    find "$HOME" -type d -name ".obsidian" -not -path "*/Application Support/*" -not -path "*/.config/*" -exec dirname {} \; 2>/dev/null > "$temp_vault_list"
 
-    if [ ${#vaults[@]} -eq 0 ]; then echo "No vaults found."; else
-        echo "Found vaults:"; for i in "${!vaults[@]}"; do echo "  $((i+1))) ${vaults[$i]}"; done
+    if [ ! -s "$temp_vault_list" ]; then
+        echo "No vaults found."
+    else
+        echo "Found vaults:"
+        nl -w2 -s') ' "$temp_vault_list"
     fi
 
     echo -e "\nChoose an option:\n  - Enter a number to select a vault.\n  - Enter 'c' to create a new vault.\n  - Enter 'm' to manually enter a path."
@@ -31,13 +37,16 @@ if [[ "$1" == "-vault" ]]; then
     NEW_VAULT_PATH=""
     case $vault_choice in
         [1-9]*) 
-            if [ "$vault_choice" -le ${#vaults[@]} ]; then NEW_VAULT_PATH=${vaults[$((vault_choice-1))]}; else echo "Invalid selection." >&2; exit 1; fi ;;
+            selected_path=$(sed -n "${vault_choice}p" "$temp_vault_list")
+            if [ -n "$selected_path" ]; then NEW_VAULT_PATH=$selected_path; else echo "Invalid selection." >&2; rm "$temp_vault_list"; exit 1; fi ;;
         c) 
             read -p "Enter path for new vault (e.g., ~/my-notes): " new_path; NEW_VAULT_PATH=$(eval echo "$new_path"); mkdir -p "$NEW_VAULT_PATH" ;;
         m) 
             read -p "Enter the absolute path to your vault: " manual_path; NEW_VAULT_PATH=$(eval echo "$manual_path") ;;
-        *) echo "Invalid choice." >&2; exit 1 ;; 
+        *) echo "Invalid choice." >&2; rm "$temp_vault_list"; exit 1 ;;
     esac
+    
+    rm "$temp_vault_list" # Clean up temp file
 
     if [ -n "$NEW_VAULT_PATH" ] && [ -d "$NEW_VAULT_PATH" ]; then
         echo "# Note-taking system configuration" > "$CONFIG_FILE"
