@@ -1,6 +1,6 @@
-# Frictionless Note-Taking System for Obsidian
+# Note-Taking CLI Tool for Obsidian
 
-This repository provides a self-contained, command-line system for capturing notes. It is designed to be cloned or forked publicly, while helping you manage your personal notes in a **separate, private repository**.
+This repository provides a self-contained, command-line tool for capturing notes. It is designed to be cloned or forked publicly, while helping you manage your personal notes in a **separate, private repository**.
 
 ## Core Principle: Your Notes are Private
 
@@ -34,7 +34,11 @@ This system is built on the principle of separating the **tool** (this public re
     ```sh
     ./setup.sh
     ```
-
+5.  (Optional) If you were unable to auto gen your remote private GitHub notes repo, you can run:
+    ```sh
+    note -git-setup
+    ```
+    <!-- Ensure you have  -->
 
 ## How It Works
 
@@ -51,9 +55,12 @@ This system is built on the principle of separating the **tool** (this public re
     - `note #idea`
         - Launches the code editor for a new note, but places it in the idea/ subdirectory and adds the keyword.
 
+    **Nightly Cron Job**:
+    - Every time the nightly sync job runs, before it commits any changes, it will first search for and delete any "blank" notes. A note is
+  considered blank if it meets both of these conditions:
+        - 1. Its title is still the default untitled.
+        - 2. Its body section is completely empty.
 
-
--   **Create a Note**: `note` or `note "My atomic note" #idea`
 -   **Reconfigure Vault**: `note -vault`
 -   **Setup Git Remote**: `note -git-setup`
 -   **Open Obsidian**: `note -obsidian`

@@ -5,7 +5,7 @@ echo_green() { echo -e "\033[0;32m$1\033[0m"; }
 echo_bold() { echo -e "\033[1m$1\033[0m"; }
 
 # --- Introduction ---
-echo_green "Welcome to the Frictionless Note-Taking System Setup!"
+echo_green "Welcome to the Note-Taking CLI Tool Setup"
 echo "This script will configure a secure, private repository for your notes."
 chmod +x note note-sync
 echo ""

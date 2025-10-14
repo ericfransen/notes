@@ -8,7 +8,7 @@ SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do
   DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
   SOURCE=$(readlink "$SOURCE")
-  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
+  [[ "$SOURCE" != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 CONFIG_FILE="$SCRIPT_DIR/config.sh"
@@ -42,7 +42,7 @@ if [[ "$1" == "-vault" ]]; then
 
     if [ -n "$NEW_VAULT_PATH" ] && [ -d "$NEW_VAULT_PATH" ]; then
         echo "# Note-taking system configuration" > "$CONFIG_FILE"
-        echo "VAULT_PATH=\"$NEW_VAULT_PATH\"" >> "$CONFIG_FILE"
+        echo "VAULT_PATH=\"$$NEW_VAULT_PATH\"" >> "$CONFIG_FILE"
         echo "Vault path updated to: $NEW_VAULT_PATH"
     else echo "Error: Invalid path or no selection made." >&2; fi
     exit 0
@@ -79,11 +79,18 @@ to_kebab_case() { echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+
 
 # --- Main Note Logic ---
 if [[ "$1" == "-obsidian" ]]; then echo "Launching Obsidian..."; VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0; fi
-NOTE_STRING=""; KEYWORDS=()
-for arg in "$@"; do
-    if [[ "$arg" == #* ]]; then KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')");
-    elif [[ -z "$NOTE_STRING" ]]; then NOTE_STRING="$arg"; fi
+
+NOTE_STRING=""
+KEYWORDS=()
+for arg in "$@"
+do
+    if [[ "$arg" == #* ]]; then
+        KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')")
+    elif [[ -z "$NOTE_STRING" ]]; then
+        NOTE_STRING="$arg"
+    fi
 done
+
 MODE="editor"; [[ -n "$NOTE_STRING" ]] && MODE="atomic"
 TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
 SUBDIR="$DEFAULT_SUBDIR"; TITLE=""; BODY=""; KEYWORDS_STRING=""
