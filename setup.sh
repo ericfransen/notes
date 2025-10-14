@@ -15,6 +15,10 @@ echo_bold "Step 1: Configure your Obsidian Vault"
 ./note -vault
 if [ ! -f "./config.sh" ]; then echo "Vault configuration failed. Exiting." >&2; exit 1; fi
 source "./config.sh"
+
+read -p "Enter path for your daily notes directory (e.g., 10 - Dailies): " daily_dir
+echo "DAILY_DIR=\"$daily_dir\"" >> "./config.sh"
+
 echo ""
 
 # --- 2. Initialize Private Notes Repository ---
