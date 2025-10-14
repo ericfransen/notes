@@ -2,7 +2,7 @@
 
 # This script syncs your Obsidian vault to a remote Git repository.
 
-# --- Find and Source Local Config ---
+# --- Find Project Root & Source Config ---
 SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do
   DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
@@ -10,8 +10,9 @@ while [ -L "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
-LOG_FILE="$SCRIPT_DIR/.sync_log"
-CONFIG_FILE="$SCRIPT_DIR/config.sh"
+PROJECT_ROOT="$SCRIPT_DIR/.."
+CONFIG_FILE="$PROJECT_ROOT/config.sh"
+LOG_FILE="$PROJECT_ROOT/.sync_log"
 
 # Log the start of the run
 echo "Sync run started at $(date)" > "$LOG_FILE"
