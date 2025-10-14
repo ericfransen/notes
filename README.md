@@ -75,10 +75,17 @@ This system is built on the principle of separating the **tool** (this public re
 
         - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
 
+-   **Open Obsidian**: `note -obsidian`
 -   **Reconfigure Vault**: `note -vault`
 -   **Setup Git Remote**: `note -git-setup`
 -   **Check Sync Status**: `note -sync-status`
--   **Open Obsidian**: `note -obsidian`
+    - Cron Schedule: Schedule: 59 23 * * * /usr/local/bin/note-sync
+        - This line is the definition of your automatic nightly backup, using a standard scheduling format called "cron":
+            - 59: At minute 59 past the hour.
+            - 23: During hour 23 of the day (i.e., 11 PM).
+            - *: On every day of the month.
+            - *: In every month.
+            - *: On every day of the week.
 
 ## Additional Justification
 
