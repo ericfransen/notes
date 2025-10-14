@@ -25,14 +25,40 @@ if [ -z "$VAULT_PATH" ] || [ ! -d "$VAULT_PATH" ]; then exit 0; fi
 cd "$VAULT_PATH" || exit 1
 if [ ! -d ".git" ]; then exit 0; fi
 
+# --- Git Conflict Pre-Check ---
+echo "Performing Git pre-check..."
+git remote update >/dev/null 2>&1 # Efficiently update all remote tracking branches
+
+STATUS=$(git status --porcelain -b)
+
+# Check for active merge conflicts (lines starting with UU)
+if echo "$STATUS" | grep -q "^UU"; then
+    echo "✗ ERROR: Merge conflict detected. Please resolve conflicts in your vault manually and then commit." >> "$LOG_FILE"
+    exit 1
+fi
+
+# Check if the local branch has diverged from the remote
+if echo "$STATUS" | grep -q "ahead.*behind"; then
+    echo "✗ ERROR: Your local branch has diverged from the remote. Please run 'git pull' in your vault to resolve." >> "$LOG_FILE"
+    exit 1
+fi
+
+# Check if the local branch is behind the remote
+if echo "$STATUS" | grep -q "behind"; then
+    echo "✗ ERROR: Your local branch is behind the remote. Please run 'git pull' in your vault to update." >> "$LOG_FILE"
+    exit 1
+fi
+
+echo "✓ Git pre-check passed. No conflicts detected."
+
 # --- Cleanup Step: Delete blank notes ---
-find "$VAULT_PATH" -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
+find . -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
     is_untitled=$(grep -c "title: untitled" "$file")
     body_section=$(sed -n '/## Body/,/---/p' "$file" | sed '1d;$d')
     trimmed_body=$(echo "$body_section" | tr -d '[:space:]')
     if [[ $is_untitled -gt 0 ]] && [[ -z "$trimmed_body" ]]; then
         echo "Deleting blank note: $file"
-        rm "$file"
+        git rm "$file"
     fi
 done
 
@@ -40,8 +66,12 @@ done
 rm -f ./.obsidian/workspace.json ./.obsidian/workspaces.json
 git add .
 if ! git diff --staged --quiet; then
+    echo "Changes detected. Committing and pushing..."
     git commit -m "chore: Daily sync $(date +'%Y-%m-%d %H:%M')"
     git push
+    echo "Sync complete."
+else
+    echo "No changes to sync."
 fi
 
 echo "Sync run finished at $(date)" >> "$LOG_FILE"

@@ -126,6 +126,13 @@ This system is designed to work with an existing notes vault that is already tra
 
 The script will automatically detect that your vault is already a Git repository with a remote configured and will skip all the creation steps, seamlessly connecting your tools to your existing notes.
 
-## Commands
+## How It Works
 
 This system provides a single main script, `note`, with several commands and flags. For a full list of commands and what they do, please see [COMMANDS.md](./COMMANDS.md).
+
+## Troubleshooting
+
+If your nightly sync fails, you can check the log file at `.sync_log` in this project's directory.
+
+- **Error: "Your local branch is behind the remote"**: This means another one of your devices has pushed changes to GitHub. To fix this, navigate to your vault directory in the terminal and run `git pull`.
+- **Error: "Merge conflict detected"**: This can happen after a `git pull` if you and another device have edited the same lines in the same file. To fix this, open your vault folder in a code editor like VS Code, find the file(s) with conflict markers (`<<<<<`, `>>>>>`), edit them to resolve the conflict, and then manually commit the changes.
