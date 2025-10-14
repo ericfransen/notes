@@ -1,6 +1,32 @@
 # Note-Taking CLI Tool for Obsidian
 
-This repository provides a self-contained, command-line tool for capturing notes. It is designed to be cloned or forked publicly, while helping you manage your personal notes in a **separate, private repository**.
+This repository provides a self-contained, command-line tool for capturing notes.
+Just type `note` on the CLI to quickly launch a markdown note that integrates with Obsidian.
+It is designed to be cloned/forked publicly, while helping you manage your personal notes in a **separate, private repository**.
+
+## Additional Justification
+
+This utility is designed for the power user who lives in the terminal. It decouples the essential task of capturing new knowledge from the context of the Obsidian application, solving the greatest source of friction in any Personal Knowledge Management (PKM) workflow.
+
+### Key Benefits of This CLI Solution
+
+- Features (CLI Value Proposition)
+    - Zero-Latency Capture
+        - Capture a complete, structured thought with a single command without leaving your console or IDE.	Eliminates context switching. Your thought is saved instantly, maintaining flow state.
+    - Structured In-Capture
+        - Automatically applies the required YYYY-MM-DD_HH-MM timestamp, YAML Frontmatter (Properties), and the status: inbox flag.	
+        - Forces consistency at the source. Your note is pre-formatted for later Dataview queries.
+    - Intelligent Routing
+        - Use simple flags (note "bug fix" #project-a) to automatically create the correct subdirectory and populate the keywords property.
+        - Automated triage. New notes are filed into their review category immediately.
+    - Decoupling & Modularity
+        - Separates the capture utility from the scheduled, nightly Git backup job.
+        - Failures in one stage (capture or sync) do not affect the other.
+
+- Enhanced Workflow: Combining Note CLI Tool & Obsidian Git Plugin
+    - While the CLI excels at initial capture, it is inferior for interactive synchronization and managing configuration state.
+    
+    - By coupling the two, the CLI handles the rapid capture and initial structure, while the plugin handles the advanced, event-driven synchronization needed for real-time collaboration or multi-device operation and settings.
 
 ## Core Principle: Your Notes are Private
 
@@ -96,27 +122,3 @@ This system is built on the principle of separating the **tool** (this public re
         - When prompted by `gh auth login`, choose Paste the authentication token.
 
         - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
-
-## Additional Justification
-
-This utility is designed for the power user who lives in the terminal. It decouples the essential task of capturing new knowledge from the context of the Obsidian application, solving the greatest source of friction in any Personal Knowledge Management (PKM) workflow.
-
-### Key Benefits of This CLI Solution
-
-- Features (CLI Value Proposition)
-    - Zero-Latency Capture
-        - Capture a complete, structured thought with a single command without leaving your console or IDE.	Eliminates context switching. Your thought is saved instantly, maintaining flow state.
-    - Structured In-Capture
-        - Automatically applies the required YYYY-MM-DD_HH-MM timestamp, YAML Frontmatter (Properties), and the status: inbox flag.	
-        - Forces consistency at the source. Your note is pre-formatted for later Dataview queries.
-    - Intelligent Routing
-        - Use simple flags (note "bug fix" #project-a) to automatically create the correct subdirectory and populate the keywords property.
-        - Automated triage. New notes are filed into their review category immediately.
-    - Decoupling & Modularity
-        - Separates the capture utility from the scheduled, nightly Git backup job.
-        - Failures in one stage (capture or sync) do not affect the other.
-
-- Enhanced Workflow: Combining Note CLI Tool & Obsidian Git Plugin
-    - While the CLI excels at initial capture, it is inferior for interactive synchronization and managing configuration state.
-    
-    - By coupling the two, the CLI handles the rapid capture and initial structure, while the plugin handles the advanced, event-driven synchronization needed for real-time collaboration or multi-device operation and settings.
