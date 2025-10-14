@@ -6,26 +6,40 @@ echo_bold() { echo -e "\033[1m$1\033[0m"; }
 
 # --- Introduction ---
 echo_green "Welcome to the Frictionless Note-Taking System Setup!"
-echo "This script will configure your self-contained note-taking environment."
+echo "This script will configure a secure, private repository for your notes."
 chmod +x note note-sync
 echo ""
 
 # --- 1. Configure Vault Path ---
 echo_bold "Step 1: Configure your Obsidian Vault"
-./note -vault # This command now creates the local config.sh
-if [ ! -f "./config.sh" ]; then
-    echo "Vault configuration failed. Exiting." >&2; exit 1
-fi
+./note -vault # This command creates the local config.sh
+if [ ! -f "./config.sh" ]; then echo "Vault configuration failed. Exiting." >&2; exit 1; fi
 source "./config.sh"
 echo ""
 
-# --- 2. Copy Template File ---
-echo_bold "Step 2: Set up the Note Template"
-# The template is now sourced from the script directory, not the vault
-if [ ! -f "./note_template.md" ]; then
-    echo "Error: note_template.md not found in project directory." >&2
+# --- 2. Initialize Private Notes Repository ---
+echo_bold "Step 2: Set up Private Git Repository for Notes"
+if [ -d "$VAULT_PATH/.git" ]; then
+    echo "Your vault at $VAULT_PATH is already a Git repository. Skipping initialization."
+else
+    read -p "Initialize a new private Git repository in '$VAULT_PATH'? (Y/n) " init_git
+    if [[ ! "$init_git" =~ ^[nN]$ ]]; then
+        (cd "$VAULT_PATH" && git init)
+        echo "Initialized a new Git repository for your notes."
+
+        # GitHub CLI automation
+        if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+            read -p "Create a private 'notes-vault' repository on GitHub and push? (Y/n) " create_gh_repo
+            if [[ ! "$create_gh_repo" =~ ^[nN]$ ]]; then
+                (cd "$VAULT_PATH" && gh repo create notes-vault --private --source=. --remote=origin --push) >/dev/null 2>&1
+                echo_green "Successfully created and linked a private repository on GitHub!"
+            fi
+        else
+            echo "GitHub CLI ('gh') not found or not authenticated."
+            echo "Please create a private repository on GitHub manually and add the remote."
+        fi
+    fi
 fi
-echo "Note template is kept within the project directory."
 echo ""
 
 # --- 3. Install Commands ---
@@ -42,16 +56,11 @@ echo ""
 echo_bold "Step 4: Configure Smart Sync (Local Cron Job)"
 read -p "Set up a local cron job for nightly backups at 11:59 PM? (Y/n) " setup_cron
 if [[ ! "$setup_cron" =~ ^[nN]$ ]]; then
-    if ! command -v git &> /dev/null; then echo "Error: git is not installed." >&2; else
-        CRON_CMD="59 23 * * * /usr/local/bin/note-sync"
-        (crontab -l 2>/dev/null | grep -Fv "note-sync" ; echo "$CRON_CMD") | crontab -
-        echo "Cron job installed. Your notes will be synced nightly if changes are detected."
-        echo "Please ensure your vault is a git repository with a configured remote."
-    fi
+    CRON_CMD="59 23 * * * /usr/local/bin/note-sync"
+    (crontab -l 2>/dev/null | grep -Fv "note-sync" ; echo "$CRON_CMD") | crontab -
+    echo "Cron job installed. Your notes will be synced nightly if changes are detected."
 fi
 echo ""
 
 # --- Completion ---
 echo_green "Setup complete!"
-echo "- Your vault is configured in the local 'config.sh' file."
-echo "- Use 'note' to create notes and 'note -vault' to reconfigure."

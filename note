@@ -52,11 +52,11 @@ if [[ "$1" == "-vault" ]]; then
     NEW_VAULT_PATH=""
     case $vault_choice in
         [1-9]*) 
-            if [ "$vault_choice" -le ${#vaults[@]} ]; then NEW_VAULT_PATH=${vaults[$((vault_choice-1))]}; else echo "Invalid selection." >&2; exit 1; fi ;; 
+            if [ "$vault_choice" -le ${#vaults[@]} ]; then NEW_VAULT_PATH=${vaults[$((vault_choice-1))]}; else echo "Invalid selection." >&2; exit 1; fi ;;
         c) 
-            read -p "Enter path for new vault (e.g., ~/my-notes): " new_path; NEW_VAULT_PATH=$(eval echo "$new_path"); mkdir -p "$NEW_VAULT_PATH" ;; 
+            read -p "Enter path for new vault (e.g., ~/my-notes): " new_path; NEW_VAULT_PATH=$(eval echo "$new_path"); mkdir -p "$NEW_VAULT_PATH" ;;
         m) 
-            read -p "Enter the absolute path to your vault: " manual_path; NEW_VAULT_PATH=$(eval echo "$manual_path") ;; 
+            read -p "Enter the absolute path to your vault: " manual_path; NEW_VAULT_PATH=$(eval echo "$manual_path") ;;
         *) echo "Invalid choice." >&2; exit 1 ;; 
     esac
 
