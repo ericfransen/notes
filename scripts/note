@@ -144,5 +144,5 @@ fi
 echo "Note created: $FILEPATH"
 if [ "$MODE" == "editor" ]; then 
     echo "Opening for editing..."
-    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" -r -g "$FILEPATH":3; else "$EDITOR_CMD" -g "$FILEPATH":3; fi
+    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" -r -g "$FILEPATH":9; else "$EDITOR_CMD" -g "$FILEPATH":9; fi
 fi

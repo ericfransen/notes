@@ -35,7 +35,7 @@ It decouples the essential task of capturing new knowledge from the context of t
 
 ## Core Principle: Your Notes are Private
 
-This system is built on the principle of separating the **tool** (this public repository) from your **data** (your private notes). The setup script will guide you through creating a new, separate, and private Git repository for your notes, ensuring you never accidentally commit personal data to a public fork.
+This system is built on the principle of separating the **tool** (this public repository) from your **data** (your private notes). The setup script will guide you through creating a new, separate, and private Git repository for your notes, ensuring you never accidentally commit personal data to a public fork, or syncing with an existing private notes repo.
 
 ## Features
 
@@ -90,7 +90,8 @@ This system is built on the principle of separating the **tool** (this public re
    **Open Vault in VS Code**: `note -code`
    **Open Vault in Obsidian**: `note -obsidian`
    **Setup Git Remote**: `note -git-setup`
-   **Check Sync Status**: `note -sync-status`
+    -   The `-v` flag opens the entire vault in VS Code, with your new note active. Use this when you want to search other notes or see the file tree.
+   **Create a Daily Note**: `note -daily` (can also be combined with `-v`)
 
    **Nightly Cron Job (Optional)**:
     - You are able to set up a backup to GitHub of your notes vault as part of initial `setup` script
@@ -109,7 +110,22 @@ This system is built on the principle of separating the **tool** (this public re
 
         - When prompted by `gh auth login`, choose Paste the authentication token.
 
-        - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
+        - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). When your cron job runs the note script, which then
+calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
+
+## Setting Up on a New Computer
+
+This system is designed to work with an existing notes vault that is already tracked in a private Git repository.
+
+1.  **Clone Your Notes Vault**: On your new computer, first clone your private notes vault from GitHub:
+    `git clone <your-private-notes-repo-url> ~/notes-vault`
+2.  **Clone the Tool**: Next, clone this `note-system` repository somewhere else:
+    `git clone <this-tool-repo-url> ~/note-system`
+3.  **Run Setup**: Navigate into the `note-system` directory and run the setup script:
+    `cd ~/note-system && bash scripts/setup.sh`
+4.  **Select Your Vault**: When prompted, choose the option to manually enter the path to your vault and provide the location where you cloned it (e.g., `~/notes-vault`).
+
+The script will automatically detect that your vault is already a Git repository with a remote configured and will skip all the creation steps, seamlessly connecting your tools to your existing notes.
 
 ## Commands
 
