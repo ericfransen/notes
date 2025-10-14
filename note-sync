@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # This script syncs your Obsidian vault to a remote Git repository.
-# It is intended to be run by a local cron job.
 
 # --- Find and Source Local Config ---
 SOURCE=${BASH_SOURCE[0]}
@@ -11,8 +10,11 @@ while [ -L "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
-
+LOG_FILE="$SCRIPT_DIR/.sync_log"
 CONFIG_FILE="$SCRIPT_DIR/config.sh"
+
+# Log the start of the run
+echo "Sync run started at $(date)" > "$LOG_FILE"
 
 if [ ! -f "$CONFIG_FILE" ]; then exit 0; fi
 source "$CONFIG_FILE"
@@ -23,15 +25,10 @@ cd "$VAULT_PATH" || exit 1
 if [ ! -d ".git" ]; then exit 0; fi
 
 # --- Cleanup Step: Delete blank notes ---
-echo "Checking for blank notes to delete..."
 find "$VAULT_PATH" -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
-    # A note is "blank" if its title is still "untitled" and its body is empty.
     is_untitled=$(grep -c "title: untitled" "$file")
-    
-    # Extract body content between "## Body" and the next "---"
     body_section=$(sed -n '/## Body/,/---/p' "$file" | sed '1d;$d')
     trimmed_body=$(echo "$body_section" | tr -d '[:space:]')
-
     if [[ $is_untitled -gt 0 ]] && [[ -z "$trimmed_body" ]]; then
         echo "Deleting blank note: $file"
         rm "$file"
@@ -39,19 +36,12 @@ find "$VAULT_PATH" -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' fi
 done
 
 # --- Git Sync Step ---
-echo "Checking for changes to sync..."
-# Clean other volatile files
 rm -f ./.obsidian/workspace.json ./.obsidian/workspaces.json
-
-# Add, commit, and push if changes are detected
 git add .
 if ! git diff --staged --quiet; then
-    echo "Changes detected. Committing and pushing..."
     git commit -m "chore: Daily sync $(date +'%Y-%m-%d %H:%M')"
     git push
-    echo "Sync complete."
-else
-    echo "No changes to sync."
 fi
 
+echo "Sync run finished at $(date)" >> "$LOG_FILE"
 exit 0

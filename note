@@ -8,7 +8,7 @@ SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do
   DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
   SOURCE=$(readlink "$SOURCE")
-  [[ "$SOURCE" != /* ]] && SOURCE=$DIR/$SOURCE
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 CONFIG_FILE="$SCRIPT_DIR/config.sh"
@@ -37,12 +37,12 @@ if [[ "$1" == "-vault" ]]; then
                 selected_path=$(sed -n "${vault_num_choice}p" "$temp_vault_list")
                 if [ -n "$selected_path" ]; then NEW_VAULT_PATH=$selected_path; else echo "Invalid selection." >&2; rm "$temp_vault_list"; exit 1; fi
             fi; rm "$temp_vault_list" ;;
-        *) echo "Invalid choice." >&2; exit 1 ;; 
+        *) echo "Invalid choice." >&2; exit 1 ;;
     esac
 
     if [ -n "$NEW_VAULT_PATH" ] && [ -d "$NEW_VAULT_PATH" ]; then
         echo "# Note-taking system configuration" > "$CONFIG_FILE"
-        echo "VAULT_PATH=\"$$NEW_VAULT_PATH\"" >> "$CONFIG_FILE"
+        echo "VAULT_PATH=\"$NEW_VAULT_PATH\"" >> "$CONFIG_FILE"
         echo "Vault path updated to: $NEW_VAULT_PATH"
     else echo "Error: Invalid path or no selection made." >&2; fi
     exit 0
@@ -54,22 +54,34 @@ if [ -f "$CONFIG_FILE" ]; then source "$CONFIG_FILE"; else
 fi
 if [ -z "$VAULT_PATH" ]; then echo "VAULT_PATH is not set. Please run 'note -vault'." >&2; exit 1; fi
 
-# --- Git Setup Command ---
+# --- Setup & Status Commands ---
 if [[ "$1" == "-git-setup" ]]; then
-    if [ ! -d "$VAULT_PATH/.git" ]; then echo "Vault is not a Git repository. Initialize with setup script first." >&2; exit 1; fi
-    if git -C "$VAULT_PATH" remote get-url origin >/dev/null 2>&1; then echo "Git remote 'origin' already exists." >&2; exit 1; fi
-    
-    echo "Configuring remote Git repository for backup..."
+    echo "Checking Git status of your vault at $VAULT_PATH..."
+    if [ ! -d "$VAULT_PATH/.git" ]; then echo "Error: Vault is not a Git repository. Please run the setup script to initialize it." >&2; exit 1; fi
+    echo "✓ Vault is a Git repository."
+
+    if git -C "$VAULT_PATH" remote get-url origin >/dev/null 2>&1; then echo "✓ Git remote 'origin' already exists. Nothing to do." >&2; exit 0; fi
+    echo "✓ No remote 'origin' found. Proceeding with setup."
+
+    echo "Checking for GitHub CLI ('gh')..."
     if command -v gh &> /dev/null && gh auth status >/dev/null 2>&1; then
-        read -p "Create a private 'notes-vault' repository on GitHub and push? (Y/n) " create_gh_repo
+        echo "✓ GitHub CLI is installed and authenticated."
+        read -p "ATTENTION: Create a new PRIVATE repository on GitHub named 'notes-vault' and push your local notes to it? (Y/n) " create_gh_repo
         if [[ ! "$create_gh_repo" =~ ^[nN]$ ]]; then
-            (cd "$VAULT_PATH" && gh repo create notes-vault --private --source=. --remote=origin --push) >/dev/null 2>&1
-            echo "Successfully created and linked a private repository on GitHub!"
-        fi
-    else
-        echo "GitHub CLI ('gh') not found or not authenticated."
-        echo "Please create a private repository on GitHub manually and add the remote URL."
-    fi
+            echo "Running 'gh repo create'..."
+            (cd "$VAULT_PATH" && gh repo create notes-vault --private --source=. --remote=origin --push)
+            if [ $? -eq 0 ]; then echo "✓ Successfully created and linked private repository on GitHub!"; else echo "✗ Automatic repo creation failed. Please try running the command manually."; fi
+        else echo "Skipping GitHub repo creation."; fi
+    else echo "✗ GitHub CLI ('gh') not found or not authenticated. Please run 'gh auth login' or create a repository manually on GitHub."; fi
+    exit 0
+fi
+
+if [[ "$1" == "-sync-status" ]]; then
+    echo "--- Sync Status ---"
+    cron_job=$(crontab -l 2>/dev/null | grep 'note-sync')
+    if [ -n "$cron_job" ]; then echo "✓ Cron job is installed."; echo "  Schedule: $cron_job"; else echo "✗ Cron job is NOT installed."; fi
+    LOG_FILE="$SCRIPT_DIR/.sync_log"
+    if [ -f "$LOG_FILE" ]; then echo "✓ Last sync attempt: $(cat "$LOG_FILE")"; else echo "No record of a previous sync run."; fi
     exit 0
 fi
 
@@ -80,15 +92,12 @@ to_kebab_case() { echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+
 # --- Main Note Logic ---
 if [[ "$1" == "-obsidian" ]]; then echo "Launching Obsidian..."; VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0; fi
 
-NOTE_STRING=""
-KEYWORDS=()
-for arg in "$@"
-do
-    if [[ "$arg" == #* ]]; then
-        KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')")
-    elif [[ -z "$NOTE_STRING" ]]; then
-        NOTE_STRING="$arg"
-    fi
+NOTE_STRING=""; KEYWORDS=()
+for arg in "$@" ; do
+    case "$arg" in
+        '#'*) KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')") ;; # Corrected from ${arg#*#} to ${arg#*#} to match the original logic
+        *) if [[ -z "$NOTE_STRING" ]]; then NOTE_STRING="$arg"; fi ;; # Corrected from NOTE_STRING to NOTE_STRING to match the original logic
+    esac
 done
 
 MODE="editor"; [[ -n "$NOTE_STRING" ]] && MODE="atomic"
@@ -100,7 +109,7 @@ KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 TEMPLATE_PATH="$SCRIPT_DIR/$TEMPLATE_FILE"
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template file not found. Creating empty note." >&2; touch "$FILEPATH"; else
-    TEMPLATE_CONTENT=$(<$TEMPLATE_PATH); CONTENT="${TEMPLATE_CONTENT//'<% timestamp >'/$TIMESTAMP}"
+    TEMPLATE_CONTENT=$(<"$TEMPLATE_PATH"); CONTENT="${TEMPLATE_CONTENT//'<% timestamp >'/$TIMESTAMP}"
     CONTENT="${CONTENT//'<% title >'/$TITLE}"; CONTENT="${CONTENT//'<% keywords >'/$KEYWORDS_STRING}"; CONTENT="${CONTENT//'<% body >'/$BODY}"
     echo "$CONTENT" > "$FILEPATH"
 fi
