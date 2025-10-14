@@ -2,6 +2,7 @@
 date: <% timestamp %>
 title: <% title %>
 keywords: daily-note
+<% metadata %>
 ---
 
 ## Today's Highlight

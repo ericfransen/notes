@@ -46,9 +46,8 @@ This system is built on the principle of separating the **tool** (this public re
 
 ## Prerequisites
 
-1.  **Git**: Required for version control.
-2.  **(Recommended) GitHub CLI**: For a fully automated setup. Install it from [cli.github.com](https://cli.github.com).
-3.  **VS Code `code` command**: For opening notes in an editor.
+1.  **(Recommended) GitHub CLI**: For a fully automated setup. Install it from [cli.github.com](https://cli.github.com).
+2.  **(Recommended) VS Code `code` command**: For opening notes in an editor, although you can specify your own editor command in the config file.
 
 ## Installation
 

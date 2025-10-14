@@ -15,10 +15,11 @@ This file provides a quick reference for all the available commands and flags fo
 
 ## Flags & Options
 
-These can be combined with the main commands (e.g., `note -v #project`).
-
 - `-v`
   - Opens the new note in "vault context". This opens your entire vault folder in the editor with the new note active, giving you access to the file tree and vault-wide search.
+
+- `--key value`
+  - Adds structured data to the note's frontmatter. For example, `note "My idea" --source "https://example.com"` will add `source: "https://example.com"` to the YAML properties.
 
 ## Utility Commands
 
