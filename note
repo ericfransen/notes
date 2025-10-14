@@ -3,7 +3,7 @@
 # note: An ultra-lightweight command-line note-taking script for Obsidian.
 #
 
-# --- Find and Source Local Config ---
+# --- Find Script Directory ---
 # Resolves the script's true directory, even when called via a symlink
 SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -12,32 +12,11 @@ while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
-
 CONFIG_FILE="$SCRIPT_DIR/config.sh"
 
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-else
-    echo "Configuration file not found. Please run the setup script from the project directory." >&2
-    exit 1
-fi
-
-if [ -z "$VAULT_PATH" ]; then
-    echo "VAULT_PATH is not set. Please run 'note -vault' to configure it." >&2
-    exit 1
-fi
-
-# --- Static Config ---
-DEFAULT_SUBDIR="00 - Inbox"
-VSCODE_CMD="code"
-TEMPLATE_FILE="note_template.md"
-
-# --- Helper Functions ---
-to_kebab_case() {
-    echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'
-}
-
 # --- Command Routing ---
+
+# The -vault command is special: it runs first and creates the config.
 if [[ "$1" == "-vault" ]]; then
     echo "Searching for Obsidian Vaults..."
     mapfile -t vaults < <(find "$HOME" -type d -name ".obsidian" -not -path "*/Application Support/*" -not -path "*/.config/*" -exec dirname {} \; 2>/dev/null)
@@ -70,12 +49,33 @@ if [[ "$1" == "-vault" ]]; then
     exit 0
 fi
 
+# --- For all other commands, now we source the config ---
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "Configuration file not found. Please run 'note -vault' or the setup script." >&2
+    exit 1
+fi
+
+if [ -z "$VAULT_PATH" ]; then
+    echo "VAULT_PATH is not set in config.sh. Please run 'note -vault' to configure it." >&2
+    exit 1
+fi
+
+# --- Static Config & Helpers ---
+DEFAULT_SUBDIR="00 - Inbox"
+VSCODE_CMD="code"
+TEMPLATE_FILE="note_template.md"
+to_kebab_case() {
+    echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'
+}
+
+# --- Main Note Logic ---
 if [[ "$1" == "-obsidian" ]]; then
     echo "Launching Obsidian..."
     VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0
 fi
 
-# --- Main Note Logic ---
 NOTE_STRING=""; KEYWORDS=()
 for arg in "$@"; do
     if [[ "$arg" == #* ]]; then KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')");
@@ -97,11 +97,11 @@ KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"
 mkdir -p "$TARGET_DIR"
 
-TEMPLATE_PATH="$SCRIPT_DIR/note_template.md"
+TEMPLATE_PATH="$SCRIPT_DIR/$TEMPLATE_FILE"
 if [ ! -f "$TEMPLATE_PATH" ]; then
     echo "Warning: Template file not found at '$TEMPLATE_PATH'. Creating empty note." >&2; touch "$FILEPATH"
 else
-    TEMPLATE_CONTENT=$(<"$TEMPLATE_PATH")
+    TEMPLATE_CONTENT=$(<$TEMPLATE_PATH)
     CONTENT="${TEMPLATE_CONTENT//'<% timestamp >'/$TIMESTAMP}"; CONTENT="${CONTENT//'<% title >'/$TITLE}"
     CONTENT="${CONTENT//'<% keywords >'/$KEYWORDS_STRING}"; CONTENT="${CONTENT//'<% body >'/$BODY}"
     echo "$CONTENT" > "$FILEPATH"

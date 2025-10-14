@@ -26,11 +26,15 @@ This system is built on the principle of separating the **tool** (this public re
     ```sh
     cd /path/to/note-system
     ```
-3.  Run the interactive setup script:
+3.  Make the setup script executable:
+    ```sh
+    chmod +x setup.sh
+    ```
+4.  Run the interactive setup script:
     ```sh
     ./setup.sh
     ```
-The script will make itself executable and guide you through the rest of the process, including setting up your private notes repository.
+
 
 ## How It Works
 
@@ -39,11 +43,15 @@ The script will make itself executable and guide you through the rest of the pro
         - Launches the code editor for a new note (markdown file) in your default inbox (00 - Inbox).
     - `note "My atomic note"` - saves new atomic note
         - Instantly saves a new atomic note with that content to your inbox. No editor is launched.
-    - `note "My atomic note" #idea`
+    - `note "My atomic note" #idea #foo`
         - Instantly saves a new atomic note. The #idea tag places the note in an idea/ subdirectory and adds idea to the note's frontmatter
          keywords.
+        - The first tag determines the location: The note will be placed in a subdirectory named after the first tag you provide: /idea.
+        - All tags are recorded: Both `idea` and `foo` will be added to the note's metadata (the YAML frontmatter), like this: keywords: idea,foo.  This allows you to file the note under its primary category while still tagging it with multiple relevant keywords for Obsidian to track.
     - `note #idea`
         - Launches the code editor for a new note, but places it in the idea/ subdirectory and adds the keyword.
+
+
 
 -   **Reconfigure Vault**: `note -vault`
 
