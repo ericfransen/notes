@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+# note: An ultra-lightweight command-line note-taking script for Obsidian.
+#
+
+# --- Configuration ---
+VAULT_PATH="$HOME/notes-vault"
+DEFAULT_SUBDIR="00 - Inbox"
+VSCODE_CMD="code" # Use "code" for VS Code, "codium" for VSCodium, etc.
+TEMPLATE_FILE="note_template.md"
+
+# --- Main Logic ---
+
+# Helper function for robust kebab-casing
+to_kebab_case() {
+    echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'
+}
+
+# 1. Handle Special Flags
+if [[ "$1" == "-obsidian" ]]; then
+    echo "Launching Obsidian vault: notes-vault..."
+    open "obsidian://open?vault=notes-vault"
+    exit 0
+fi
+
+# 2. Parse Arguments
+NOTE_STRING=""
+KEYWORDS=()
+for arg in "$@"; do
+    if [[ "$arg" == \#* ]]; then
+        KEYWORDS+=("$(echo "${arg#\#}" | tr '[:upper:]' '[:lower:]')")
+    elif [[ -z "$NOTE_STRING" ]]; then
+        NOTE_STRING="$arg"
+    fi
+done
+
+# 3. Set Mode and Variables
+MODE="editor"
+if [[ -n "$NOTE_STRING" ]]; then
+    MODE="atomic"
+fi
+
+TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
+FILE_TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
+SUBDIR="$DEFAULT_SUBDIR"
+TITLE=""
+BODY=""
+KEYWORDS_STRING=""
+
+# 4. Process Keywords and Subdirectory
+if [ ${#KEYWORDS[@]} -gt 0 ]; then
+    SUBDIR="${KEYWORDS[0]}" # Use the first keyword for the subdirectory name
+    KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}")
+fi
+
+# 5. Populate Content Based on Mode
+if [ "$MODE" == "atomic" ]; then
+    TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
+    BODY="$NOTE_STRING"
+else # Editor mode
+    TITLE="untitled" # Placeholder for filename, user will edit
+    BODY=""
+fi
+
+# 6. Define File Name and Path
+KEBAB_TITLE=$(to_kebab_case "$TITLE")
+FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
+TARGET_DIR="${VAULT_PATH}/${SUBDIR}"
+FILEPATH="${TARGET_DIR}/${FILENAME}"
+
+# 7. Create Note from Template
+mkdir -p "$TARGET_DIR"
+
+TEMPLATE_PATH="$VAULT_PATH/$TEMPLATE_FILE"
+if [ ! -f "$TEMPLATE_PATH" ]; then
+    echo "Error: Template file not found at '$TEMPLATE_PATH'" >&2
+    exit 1
+fi
+
+# Substitute placeholders in the template
+TEMPLATE_CONTENT=$(<"$TEMPLATE_PATH")
+CONTENT="${TEMPLATE_CONTENT//'<% timestamp %>'/$TIMESTAMP}"
+CONTENT="${CONTENT//'<% title %>'/$TITLE}"
+CONTENT="${CONTENT//'<% keywords %>'/$KEYWORDS_STRING}"
+CONTENT="${CONTENT//'<% body %>'/$BODY}"
+
+echo "$CONTENT" > "$FILEPATH"
+echo "Note created: $FILEPATH"
+
+# 8. Open in Editor if in Editor Mode
+if [ "$MODE" == "editor" ]; then
+    echo "Opening for editing..."
+    # Positions the cursor on line 3 for the user to fill in the 'title' property.
+    $VSCODE_CMD -g "$FILEPATH":3
+fi
