@@ -5,8 +5,6 @@ keywords: <% keywords %>
 status: inbox
 ---
 
-# <% title %>
-
 ## Body
 <% body %>
 

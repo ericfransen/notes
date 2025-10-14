@@ -75,8 +75,8 @@ This system is built on the principle of separating the **tool** (this public re
 
         - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
 
--   **Open Obsidian**: `note -obsidian`
--   **Reconfigure Vault**: `note -vault`
+-   **Open Vault in VS Code**: `note -code`
+-   **Open Vault in Obsidian**: `note -obsidian`
 -   **Setup Git Remote**: `note -git-setup`
 -   **Check Sync Status**: `note -sync-status`
     - Cron Schedule: Schedule: 59 23 * * * /usr/local/bin/note-sync

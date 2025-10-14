@@ -112,6 +112,7 @@ VSCODE_CMD="code"
 to_kebab_case() { echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
 
 # --- Main Note Logic ---
+if [[ "$1" == "-code" ]]; then echo "Opening vault in VS Code..."; "$VSCODE_CMD" "$VAULT_PATH"; exit 0; fi
 if [[ "$1" == "-obsidian" ]]; then echo "Launching Obsidian..."; VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0; fi
 
 NOTE_STRING=""; KEYWORDS=()
@@ -146,4 +147,4 @@ else
 fi
 
 echo "Note created: $FILEPATH"
-if [ "$MODE" == "editor" ]; then echo "Opening for editing..."; $VSCODE_CMD -g "$FILEPATH":3; fi
+if [ "$MODE" == "editor" ]; then echo "Opening for editing..."; $VSCODE_CMD -g "$FILEPATH":9; fi
