@@ -4,12 +4,11 @@
 #
 
 # --- Find Script Directory ---
-# Resolves the script's true directory, even when called via a symlink
 SOURCE=${BASH_SOURCE[0]}
-while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+while [ -L "$SOURCE" ]; do
   DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
   SOURCE=$(readlink "$SOURCE")
-  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 CONFIG_FILE="$SCRIPT_DIR/config.sh"
@@ -18,104 +17,86 @@ CONFIG_FILE="$SCRIPT_DIR/config.sh"
 
 # The -vault command is special: it runs first and creates the config.
 if [[ "$1" == "-vault" ]]; then
-    echo "Searching for Obsidian Vaults..."
-    
-    # Use a temporary file for portability instead of mapfile (which is bash-only)
-    temp_vault_list=$(mktemp)
-    find "$HOME" -type d -name ".obsidian" -not -path "*/Application Support/*" -not -path "*/.config/*" -exec dirname {} \; 2>/dev/null > "$temp_vault_list"
-
-    if [ ! -s "$temp_vault_list" ]; then
-        echo "No vaults found."
-    else
-        echo "Found vaults:"
-        nl -w2 -s') ' "$temp_vault_list"
-    fi
-
-    echo -e "\nChoose an option:\n  - Enter a number to select a vault.\n  - Enter 'c' to create a new vault.\n  - Enter 'm' to manually enter a path."
-    read -p "Choice: " vault_choice
+    echo "How would you like to configure your Obsidian vault?"
+    echo "  1) Manually enter path to an existing vault"
+    echo "  2) Create a new vault at a specified path"
+    echo "  3) Search your home directory for vaults (can be slow)"
+    read -p "Choice: " menu_choice
 
     NEW_VAULT_PATH=""
-    case $vault_choice in
-        [1-9]*) 
-            selected_path=$(sed -n "${vault_choice}p" "$temp_vault_list")
-            if [ -n "$selected_path" ]; then NEW_VAULT_PATH=$selected_path; else echo "Invalid selection." >&2; rm "$temp_vault_list"; exit 1; fi ;;
-        c) 
-            read -p "Enter path for new vault (e.g., ~/my-notes): " new_path; NEW_VAULT_PATH=$(eval echo "$new_path"); mkdir -p "$NEW_VAULT_PATH" ;;
-        m) 
-            read -p "Enter the absolute path to your vault: " manual_path; NEW_VAULT_PATH=$(eval echo "$manual_path") ;;
-        *) echo "Invalid choice." >&2; rm "$temp_vault_list"; exit 1 ;;
+    case $menu_choice in
+        1) read -p "Enter the absolute path to your vault: " manual_path; NEW_VAULT_PATH=$(eval echo "$manual_path") ;;
+        2) read -p "Enter path for new vault (e.g., ~/my-notes): " new_path; NEW_VAULT_PATH=$(eval echo "$new_path"); mkdir -p "$NEW_VAULT_PATH" ;;
+        3) 
+            echo "Searching for Obsidian Vaults (this may take several minutes)..."
+            temp_vault_list=$(mktemp)
+            find "$HOME" -type d -name ".obsidian" -not -path "*/Application Support/*" -not -path "*/.config/*" -exec dirname {} \; 2>/dev/null > "$temp_vault_list"
+            if [ ! -s "$temp_vault_list" ]; then echo "No vaults found."; else
+                echo "Found vaults:"; nl -w2 -s') ' "$temp_vault_list"
+                read -p "Select a vault by number: " vault_num_choice
+                selected_path=$(sed -n "${vault_num_choice}p" "$temp_vault_list")
+                if [ -n "$selected_path" ]; then NEW_VAULT_PATH=$selected_path; else echo "Invalid selection." >&2; rm "$temp_vault_list"; exit 1; fi
+            fi; rm "$temp_vault_list" ;;
+        *) echo "Invalid choice." >&2; exit 1 ;; 
     esac
-    
-    rm "$temp_vault_list" # Clean up temp file
 
     if [ -n "$NEW_VAULT_PATH" ] && [ -d "$NEW_VAULT_PATH" ]; then
         echo "# Note-taking system configuration" > "$CONFIG_FILE"
         echo "VAULT_PATH=\"$NEW_VAULT_PATH\"" >> "$CONFIG_FILE"
         echo "Vault path updated to: $NEW_VAULT_PATH"
-    else
-        echo "Error: Invalid path '$NEW_VAULT_PATH'." >&2
-    fi
+    else echo "Error: Invalid path or no selection made." >&2; fi
     exit 0
 fi
 
 # --- For all other commands, now we source the config ---
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-else
-    echo "Configuration file not found. Please run 'note -vault' or the setup script." >&2
-    exit 1
+if [ -f "$CONFIG_FILE" ]; then source "$CONFIG_FILE"; else
+    echo "Configuration file not found. Please run 'note -vault' or the setup script." >&2; exit 1
 fi
+if [ -z "$VAULT_PATH" ]; then echo "VAULT_PATH is not set. Please run 'note -vault'." >&2; exit 1; fi
 
-if [ -z "$VAULT_PATH" ]; then
-    echo "VAULT_PATH is not set in config.sh. Please run 'note -vault' to configure it." >&2
-    exit 1
+# --- Git Setup Command ---
+if [[ "$1" == "-git-setup" ]]; then
+    if [ ! -d "$VAULT_PATH/.git" ]; then echo "Vault is not a Git repository. Initialize with setup script first." >&2; exit 1; fi
+    if git -C "$VAULT_PATH" remote get-url origin >/dev/null 2>&1; then echo "Git remote 'origin' already exists." >&2; exit 1; fi
+    
+    echo "Configuring remote Git repository for backup..."
+    if command -v gh &> /dev/null && gh auth status >/dev/null 2>&1; then
+        read -p "Create a private 'notes-vault' repository on GitHub and push? (Y/n) " create_gh_repo
+        if [[ ! "$create_gh_repo" =~ ^[nN]$ ]]; then
+            (cd "$VAULT_PATH" && gh repo create notes-vault --private --source=. --remote=origin --push) >/dev/null 2>&1
+            echo "Successfully created and linked a private repository on GitHub!"
+        fi
+    else
+        echo "GitHub CLI ('gh') not found or not authenticated."
+        echo "Please create a private repository on GitHub manually and add the remote URL."
+    fi
+    exit 0
 fi
 
 # --- Static Config & Helpers ---
-DEFAULT_SUBDIR="00 - Inbox"
-VSCODE_CMD="code"
-TEMPLATE_FILE="note_template.md"
-to_kebab_case() {
-    echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'
-}
+DEFAULT_SUBDIR="00 - Inbox"; VSCODE_CMD="code"; TEMPLATE_FILE="note_template.md"
+to_kebab_case() { echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
 
 # --- Main Note Logic ---
-if [[ "$1" == "-obsidian" ]]; then
-    echo "Launching Obsidian..."
-    VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0
-fi
-
+if [[ "$1" == "-obsidian" ]]; then echo "Launching Obsidian..."; VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0; fi
 NOTE_STRING=""; KEYWORDS=()
 for arg in "$@"; do
     if [[ "$arg" == #* ]]; then KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')");
     elif [[ -z "$NOTE_STRING" ]]; then NOTE_STRING="$arg"; fi
 done
-
 MODE="editor"; [[ -n "$NOTE_STRING" ]] && MODE="atomic"
 TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
 SUBDIR="$DEFAULT_SUBDIR"; TITLE=""; BODY=""; KEYWORDS_STRING=""
-
-if [ ${#KEYWORDS[@]} -gt 0 ]; then
-    SUBDIR="${KEYWORDS[0]}"; KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}")
-fi
-
-if [ "$MODE" == "atomic" ]; then TITLE=$(echo "$NOTE_STRING" | cut -c 1-80); BODY="$NOTE_STRING";
-else TITLE="untitled"; BODY=""; fi
-
+if [ ${#KEYWORDS[@]} -gt 0 ]; then SUBDIR="${KEYWORDS[0]}"; KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
+if [ "$MODE" == "atomic" ]; then TITLE=$(echo "$NOTE_STRING" | cut -c 1-80); BODY="$NOTE_STRING"; else TITLE="untitled"; BODY=""; fi
 KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
-TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"
-mkdir -p "$TARGET_DIR"
-
+TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 TEMPLATE_PATH="$SCRIPT_DIR/$TEMPLATE_FILE"
-if [ ! -f "$TEMPLATE_PATH" ]; then
-    echo "Warning: Template file not found at '$TEMPLATE_PATH'. Creating empty note." >&2; touch "$FILEPATH"
-else
-    TEMPLATE_CONTENT=$(<$TEMPLATE_PATH)
-    CONTENT="${TEMPLATE_CONTENT//'<% timestamp >'/$TIMESTAMP}"; CONTENT="${CONTENT//'<% title >'/$TITLE}"
-    CONTENT="${CONTENT//'<% keywords >'/$KEYWORDS_STRING}"; CONTENT="${CONTENT//'<% body >'/$BODY}"
+if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template file not found. Creating empty note." >&2; touch "$FILEPATH"; else
+    TEMPLATE_CONTENT=$(<$TEMPLATE_PATH); CONTENT="${TEMPLATE_CONTENT//'<% timestamp >'/$TIMESTAMP}"
+    CONTENT="${CONTENT//'<% title >'/$TITLE}"; CONTENT="${CONTENT//'<% keywords >'/$KEYWORDS_STRING}"; CONTENT="${CONTENT//'<% body >'/$BODY}"
     echo "$CONTENT" > "$FILEPATH"
 fi
-
 echo "Note created: $FILEPATH"
 
 if [ "$MODE" == "editor" ]; then echo "Opening for editing..."; $VSCODE_CMD -g "$FILEPATH":3; fi

@@ -12,7 +12,7 @@ echo ""
 
 # --- 1. Configure Vault Path ---
 echo_bold "Step 1: Configure your Obsidian Vault"
-./note -vault # This command creates the local config.sh
+./note -vault
 if [ ! -f "./config.sh" ]; then echo "Vault configuration failed. Exiting." >&2; exit 1; fi
 source "./config.sh"
 echo ""
@@ -20,24 +20,13 @@ echo ""
 # --- 2. Initialize Private Notes Repository ---
 echo_bold "Step 2: Set up Private Git Repository for Notes"
 if [ -d "$VAULT_PATH/.git" ]; then
-    echo "Your vault at $VAULT_PATH is already a Git repository. Skipping initialization."
+    echo "Your vault is already a Git repository. Skipping initialization."
 else
     read -p "Initialize a new private Git repository in '$VAULT_PATH'? (Y/n) " init_git
     if [[ ! "$init_git" =~ ^[nN]$ ]]; then
         (cd "$VAULT_PATH" && git init)
         echo "Initialized a new Git repository for your notes."
-
-        # GitHub CLI automation
-        if command -v gh &> /dev/null && gh auth status &> /dev/null; then
-            read -p "Create a private 'notes-vault' repository on GitHub and push? (Y/n) " create_gh_repo
-            if [[ ! "$create_gh_repo" =~ ^[nN]$ ]]; then
-                (cd "$VAULT_PATH" && gh repo create notes-vault --private --source=. --remote=origin --push) >/dev/null 2>&1
-                echo_green "Successfully created and linked a private repository on GitHub!"
-            fi
-        else
-            echo "GitHub CLI ('gh') not found or not authenticated."
-            echo "Please create a private repository on GitHub manually and add the remote."
-        fi
+        echo_green "To create and link a private GitHub repository for backup, run 'note -git-setup' at any time."
     fi
 fi
 echo ""

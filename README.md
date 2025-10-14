@@ -53,6 +53,7 @@ This system is built on the principle of separating the **tool** (this public re
 
 
 
+-   **Create a Note**: `note` or `note "My atomic note" #idea`
 -   **Reconfigure Vault**: `note -vault`
-
+-   **Setup Git Remote**: `note -git-setup`
 -   **Open Obsidian**: `note -obsidian`
