@@ -3,93 +3,110 @@
 # note: An ultra-lightweight command-line note-taking script for Obsidian.
 #
 
-# --- Configuration ---
-VAULT_PATH="$HOME/notes-vault"
+# --- Find and Source Local Config ---
+# Resolves the script's true directory, even when called via a symlink
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+
+CONFIG_FILE="$SCRIPT_DIR/config.sh"
+
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "Configuration file not found. Please run the setup script from the project directory." >&2
+    exit 1
+fi
+
+if [ -z "$VAULT_PATH" ]; then
+    echo "VAULT_PATH is not set. Please run 'note -vault' to configure it." >&2
+    exit 1
+fi
+
+# --- Static Config ---
 DEFAULT_SUBDIR="00 - Inbox"
-VSCODE_CMD="code" # Use "code" for VS Code, "codium" for VSCodium, etc.
+VSCODE_CMD="code"
 TEMPLATE_FILE="note_template.md"
 
-# --- Main Logic ---
-
-# Helper function for robust kebab-casing
+# --- Helper Functions ---
 to_kebab_case() {
     echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'
 }
 
-# 1. Handle Special Flags
-if [[ "$1" == "-obsidian" ]]; then
-    echo "Launching Obsidian vault: notes-vault..."
-    open "obsidian://open?vault=notes-vault"
+# --- Command Routing ---
+if [[ "$1" == "-vault" ]]; then
+    echo "Searching for Obsidian Vaults..."
+    mapfile -t vaults < <(find "$HOME" -type d -name ".obsidian" -not -path "*/Application Support/*" -not -path "*/.config/*" -exec dirname {} \; 2>/dev/null)
+
+    if [ ${#vaults[@]} -eq 0 ]; then echo "No vaults found."; else
+        echo "Found vaults:"; for i in "${!vaults[@]}"; do echo "  $((i+1))) ${vaults[$i]}"; done
+    fi
+
+    echo -e "\nChoose an option:\n  - Enter a number to select a vault.\n  - Enter 'c' to create a new vault.\n  - Enter 'm' to manually enter a path."
+    read -p "Choice: " vault_choice
+
+    NEW_VAULT_PATH=""
+    case $vault_choice in
+        [1-9]*) 
+            if [ "$vault_choice" -le ${#vaults[@]} ]; then NEW_VAULT_PATH=${vaults[$((vault_choice-1))]}; else echo "Invalid selection." >&2; exit 1; fi ;; 
+        c) 
+            read -p "Enter path for new vault (e.g., ~/my-notes): " new_path; NEW_VAULT_PATH=$(eval echo "$new_path"); mkdir -p "$NEW_VAULT_PATH" ;; 
+        m) 
+            read -p "Enter the absolute path to your vault: " manual_path; NEW_VAULT_PATH=$(eval echo "$manual_path") ;; 
+        *) echo "Invalid choice." >&2; exit 1 ;; 
+    esac
+
+    if [ -n "$NEW_VAULT_PATH" ] && [ -d "$NEW_VAULT_PATH" ]; then
+        echo "# Note-taking system configuration" > "$CONFIG_FILE"
+        echo "VAULT_PATH=\"$NEW_VAULT_PATH\"" >> "$CONFIG_FILE"
+        echo "Vault path updated to: $NEW_VAULT_PATH"
+    else
+        echo "Error: Invalid path '$NEW_VAULT_PATH'." >&2
+    fi
     exit 0
 fi
 
-# 2. Parse Arguments
-NOTE_STRING=""
-KEYWORDS=()
+if [[ "$1" == "-obsidian" ]]; then
+    echo "Launching Obsidian..."
+    VAULT_NAME=$(basename "$VAULT_PATH"); open "obsidian://open?vault=$VAULT_NAME"; exit 0
+fi
+
+# --- Main Note Logic ---
+NOTE_STRING=""; KEYWORDS=()
 for arg in "$@"; do
-    if [[ "$arg" == \#* ]]; then
-        KEYWORDS+=("$(echo "${arg#\#}" | tr '[:upper:]' '[:lower:]')")
-    elif [[ -z "$NOTE_STRING" ]]; then
-        NOTE_STRING="$arg"
-    fi
+    if [[ "$arg" == #* ]]; then KEYWORDS+=("$(echo "${arg#*#}" | tr '[:upper:]' '[:lower:]')");
+    elif [[ -z "$NOTE_STRING" ]]; then NOTE_STRING="$arg"; fi
 done
 
-# 3. Set Mode and Variables
-MODE="editor"
-if [[ -n "$NOTE_STRING" ]]; then
-    MODE="atomic"
-fi
+MODE="editor"; [[ -n "$NOTE_STRING" ]] && MODE="atomic"
+TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
+SUBDIR="$DEFAULT_SUBDIR"; TITLE=""; BODY=""; KEYWORDS_STRING=""
 
-TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
-FILE_TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
-SUBDIR="$DEFAULT_SUBDIR"
-TITLE=""
-BODY=""
-KEYWORDS_STRING=""
-
-# 4. Process Keywords and Subdirectory
 if [ ${#KEYWORDS[@]} -gt 0 ]; then
-    SUBDIR="${KEYWORDS[0]}" # Use the first keyword for the subdirectory name
-    KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}")
+    SUBDIR="${KEYWORDS[0]}"; KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}")
 fi
 
-# 5. Populate Content Based on Mode
-if [ "$MODE" == "atomic" ]; then
-    TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
-    BODY="$NOTE_STRING"
-else # Editor mode
-    TITLE="untitled" # Placeholder for filename, user will edit
-    BODY=""
-fi
+if [ "$MODE" == "atomic" ]; then TITLE=$(echo "$NOTE_STRING" | cut -c 1-80); BODY="$NOTE_STRING";
+else TITLE="untitled"; BODY=""; fi
 
-# 6. Define File Name and Path
-KEBAB_TITLE=$(to_kebab_case "$TITLE")
-FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
-TARGET_DIR="${VAULT_PATH}/${SUBDIR}"
-FILEPATH="${TARGET_DIR}/${FILENAME}"
-
-# 7. Create Note from Template
+KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
+TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"
 mkdir -p "$TARGET_DIR"
 
-TEMPLATE_PATH="$VAULT_PATH/$TEMPLATE_FILE"
+TEMPLATE_PATH="$SCRIPT_DIR/note_template.md"
 if [ ! -f "$TEMPLATE_PATH" ]; then
-    echo "Error: Template file not found at '$TEMPLATE_PATH'" >&2
-    exit 1
+    echo "Warning: Template file not found at '$TEMPLATE_PATH'. Creating empty note." >&2; touch "$FILEPATH"
+else
+    TEMPLATE_CONTENT=$(<"$TEMPLATE_PATH")
+    CONTENT="${TEMPLATE_CONTENT//'<% timestamp >'/$TIMESTAMP}"; CONTENT="${CONTENT//'<% title >'/$TITLE}"
+    CONTENT="${CONTENT//'<% keywords >'/$KEYWORDS_STRING}"; CONTENT="${CONTENT//'<% body >'/$BODY}"
+    echo "$CONTENT" > "$FILEPATH"
 fi
 
-# Substitute placeholders in the template
-TEMPLATE_CONTENT=$(<"$TEMPLATE_PATH")
-CONTENT="${TEMPLATE_CONTENT//'<% timestamp %>'/$TIMESTAMP}"
-CONTENT="${CONTENT//'<% title %>'/$TITLE}"
-CONTENT="${CONTENT//'<% keywords %>'/$KEYWORDS_STRING}"
-CONTENT="${CONTENT//'<% body %>'/$BODY}"
-
-echo "$CONTENT" > "$FILEPATH"
 echo "Note created: $FILEPATH"
 
-# 8. Open in Editor if in Editor Mode
-if [ "$MODE" == "editor" ]; then
-    echo "Opening for editing..."
-    # Positions the cursor on line 3 for the user to fill in the 'title' property.
-    $VSCODE_CMD -g "$FILEPATH":3
-fi
+if [ "$MODE" == "editor" ]; then echo "Opening for editing..."; $VSCODE_CMD -g "$FILEPATH":3; fi

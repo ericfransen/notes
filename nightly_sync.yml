@@ -1,9 +1,10 @@
-name: Nightly Vault Sync
+name: Vault Sync
 
 on:
-  schedule:
-    - cron: '59 23 * * *' # Runs daily at 11:59 PM UTC
-  workflow_dispatch: # Allows manual runs from the Actions tab
+  workflow_dispatch: # Allows manual or API-triggered runs
+  push:
+    branches:
+      - main # Or your default branch
 
 jobs:
   sync:
@@ -11,9 +12,6 @@ jobs:
     steps:
       - name: Checkout Vault
         uses: actions/checkout@v4
-        with:
-          # Fetch all history for accurate change detection
-          fetch-depth: 0
 
       - name: Configure Git User
         run: |
@@ -22,21 +20,16 @@ jobs:
 
       - name: Clean Ignored Files
         run: |
-          # Remove active workspace state and other volatile JSON files
           rm -f ./.obsidian/workspace.json
           rm -f ./.obsidian/workspaces.json
-          # Remove other json files as requested
           find . -type f -name '*.json' -delete
-          echo "Cleaned up ignored and volatile files."
 
-      - name: Commit and Push Changes
+      - name: Commit and Push Changes (if any)
         run: |
           git add .
-          # Check if there are any changes to commit
           if ! git diff --staged --quiet; then
-            echo "Changes detected. Committing and pushing..."
-            git commit -m "chore: Nightly sync $(date -u +'%Y-%m-%d')"
+            git commit -m "chore: Remote sync $(date -u +'%Y-%m-%d')"
             git push
           else
-            echo "No changes detected. Nothing to commit."
+            echo "No changes to commit from remote."
           fi
