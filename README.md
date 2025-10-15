@@ -125,11 +125,17 @@ This system provides a single main script, `note`, with several commands and fla
 This system is designed to work with an existing notes vault that is already tracked in a private remote Git repository.
 
 1.  **Clone Your Notes Vault**: On your new computer, first clone your private notes vault from GitHub:
+
     `git clone <your-private-notes-repo-url> ~/notes-vault`
+
 2.  **Clone the Tool**: Next, clone this `note-system` repository somewhere else:
+
     `git clone <this-tool-repo-url> ~/note-system`
+
 3.  **Run Setup**: Navigate into the `note-system` directory and run the setup script:
+
     `cd ~/note-system && bash scripts/setup.sh`
+
 4.  **Select Your Vault**: When prompted, choose the option to manually enter the path to your vault and provide the location where you cloned it (e.g., `~/notes-vault`).
 
 The script will automatically detect that your vault is already a Git repository with a remote configured and will skip all the creation steps, seamlessly connecting your tools to your existing notes.

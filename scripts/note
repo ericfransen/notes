@@ -16,14 +16,19 @@ OPEN_IN_VAULT="false"
 KEYWORDS=()
 METADATA_YAML=""
 OTHER_ARGS=()
+CUSTOM_TITLE=""
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
-    -v) 
+    -v)
       OPEN_IN_VAULT="true"
       shift
-      ;; 
-    --*) 
+      ;;
+    --title)
+      CUSTOM_TITLE="$2"
+      shift; shift
+      ;;
+    --*)
       key="${1#--}"
       if [[ -n "$2" ]] && [[ "$2" != --* ]] && [[ "$2" != '#'* ]]; then
         value="$2"
@@ -33,15 +38,15 @@ while [[ "$#" -gt 0 ]]; do
         METADATA_YAML+="${key}: true\n"
         shift
       fi
-      ;; 
-    '#'*) 
+      ;;
+    '#'*)
       KEYWORDS+=("$(echo "${1#\#}" | tr '[:upper:]' '[:lower:]')")
       shift
-      ;; 
-    *) 
+      ;;
+    *)
       OTHER_ARGS+=("$1")
       shift
-      ;; 
+      ;;
   esac
 done
 
@@ -53,6 +58,11 @@ COMMAND="${OTHER_ARGS[0]}"
 # --- Command Routing ---
 if [[ "$COMMAND" == "-vault" ]]; then
     # ... (Full vault logic here, unchanged)
+    exit 0
+fi
+
+if [[ "$COMMAND" == "cmd" ]]; then
+    cat "$PROJECT_ROOT/COMMANDS.md"
     exit 0
 fi
 
@@ -68,7 +78,7 @@ case "$COMMAND" in
         echo "Running utility command: $COMMAND"
         # For now, we'll just exit to show the command was caught
         exit 0
-        ;; 
+        ;;
 esac
 
 # --- Main Note Creation Logic ---
@@ -86,13 +96,24 @@ to_kebab_case() { echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+
 TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%Y-%m-%d_%H-%M')
 SUBDIR="$DEFAULT_SUBDIR"; TITLE=""; BODY=""; KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then SUBDIR="${KEYWORDS[0]}"; KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
-if [ "$MODE" == "atomic" ]; then TITLE=$(echo "$NOTE_STRING" | cut -c 1-80); BODY="$NOTE_STRING"; else TITLE="untitled"; BODY=""; fi
+if [ "$MODE" == "atomic" ]; then
+    TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
+    BODY="$NOTE_STRING"
+else
+    TITLE="untitled"
+    BODY=""
+fi
+
+if [[ -n "$CUSTOM_TITLE" ]]; then
+    TITLE="$CUSTOM_TITLE"
+fi
+
 KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 TEMPLATE_PATH="$PROJECT_ROOT/$NOTE_TEMPLATE_PATH"
 
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
-    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" '{ 
+    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" '{
         gsub(/<% timestamp %>/, ts);
         gsub(/<% title %>/, ti);
         gsub(/<% keywords %>/, kw);
@@ -104,7 +125,7 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
 fi
 
 echo "Note created: $FILEPATH"
-if [ "$MODE" == "editor" ]; then 
+if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
     if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" -r -g "$FILEPATH":10; else "$EDITOR_CMD" -g "$FILEPATH":10; fi
 fi
