@@ -31,8 +31,8 @@ if [ ! -f "$CONFIG_FILE" ]; then
         echo "# Example: [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
         echo "declare -A TEMPLATES=(" >> "$CONFIG_FILE"
         echo "    [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
-        echo "    [book]=\"templates/book_review_template.md\"" >> "$CONFIG_FILE"
-        echo "    [books2read]=\"templates/book_toread_template.md\"" >> "$CONFIG_FILE"
+        # echo "    [book]=\"templates/book_review_template.md\"" >> "$CONFIG_FILE"
+        # echo "    [books2read]=\"templates/book2read_template.md\"" >> "$CONFIG_FILE"
         echo ")" >> "$CONFIG_FILE"
     fi
 
