@@ -21,23 +21,6 @@ if [ ! -f "$CONFIG_FILE" ]; then
     echo "" >> "$CONFIG_FILE"
     echo 'EDITOR_CMD="code"' >> "$CONFIG_FILE"
     echo 'NOTE_TEMPLATE_PATH="templates/note_template.md"' >> "$CONFIG_FILE"
-    echo 'DAILY_TEMPLATE_PATH="templates/daily_note_template.md"' >> "$CONFIG_FILE"
-    echo "" >> "$CONFIG_FILE"
-
-    # Check if TEMPLATES array is already defined, if not, add the example config
-    if ! grep -q "declare -A TEMPLATES=" "$CONFIG_FILE"; then
-        echo "# To add a keyword-to-template mapping, add entries to the TEMPLATES array." >> "$CONFIG_FILE"
-        echo "# The 'keyword' is what you type after the '#', and the value is the template path." >> "$CONFIG_FILE"
-        echo "# Example: [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
-        echo "declare -A TEMPLATES=(" >> "$CONFIG_FILE"
-        echo "    [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
-        # echo "    [book]=\"templates/book_review_template.md\"" >> "$CONFIG_FILE"
-        # echo "    [books2read]=\"templates/book2read_template.md\"" >> "$CONFIG_FILE"
-        echo ")" >> "$CONFIG_FILE"
-    fi
-
-    echo "" >> "$CONFIG_FILE"
-    echo "# Cron schedule for nightly sync. Default is 11:59 PM daily." >> "$CONFIG_FILE"
     echo 'CRON_SCHEDULE="59 23 * * *"' >> "$CONFIG_FILE"
     echo_green "✓ Created new config.sh file."
 else
@@ -45,7 +28,21 @@ else
 fi
 echo ""
 
-# --- 2. Configure Vault Path ---
+# --- 2. Add Template Mapping Section (if missing) ---
+if ! grep -q "# --- Template-Keyword Mapping ---" "$CONFIG_FILE"; then
+    echo "" >> "$CONFIG_FILE"
+    echo "# --- Template-Keyword Mapping ---" >> "$CONFIG_FILE"
+    echo "# To map a keyword (e.g., #meeting) to a specific template, uncomment" >> "$CONFIG_FILE"
+    echo "# the following lines and add your own mappings." >> "$CONFIG_FILE"
+    echo "# The 'keyword' is the key, and the template path is the value." >> "$CONFIG_FILE"
+    echo "#" >> "$CONFIG_FILE"
+    echo "# declare -A TEMPLATES=(" >> "$CONFIG_FILE"
+    echo "#   [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
+    echo "#   [book]=\"templates/book_review_template.md\"" >> "$CONFIG_FILE"
+    echo "# )" >> "$CONFIG_FILE"
+fi
+
+# --- 3. Configure Vault Path ---
 echo_bold "Step 2: Configure your Obsidian Vault"
 "$PROJECT_ROOT/scripts/note" -vault
 source "$CONFIG_FILE"

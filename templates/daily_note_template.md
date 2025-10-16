@@ -5,12 +5,16 @@ keywords: daily-note
 <% metadata %>
 ---
 
-## Today's Highlight
+## Today's Goal
 <!-- What is the one most important thing you want to accomplish today? -->
 
 
-## Journal
-<!-- Gratitude or "Three Good Things": What went well today? What are you grateful for? -->
+## Journal POSITIVE
+<!-- Wins: What went well today? What are you grateful for? -->
+
+
+## Journal NEGATIVE
+<!-- Blockers: What issues arose today? What did you/are you doing to remediate them? -->
 
 
 ## Notes
