@@ -110,7 +110,20 @@ fi
 
 KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
+
+# --- Template Selection Logic ---
+# Default to the standard note template
 TEMPLATE_PATH="$PROJECT_ROOT/$NOTE_TEMPLATE_PATH"
+
+# Check if the primary keyword has a mapped template
+if [ ${#KEYWORDS[@]} -gt 0 ]; then
+    FIRST_KEYWORD="${KEYWORDS[0]}"
+    if [[ -n "${TEMPLATES[$FIRST_KEYWORD]}" ]]; then
+        # If a mapping exists, use that template instead
+        TEMPLATE_PATH="$PROJECT_ROOT/${TEMPLATES[$FIRST_KEYWORD]}"
+        echo "Using template for keyword: $FIRST_KEYWORD"
+    fi
+fi
 
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
     CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" '{

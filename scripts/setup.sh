@@ -23,6 +23,20 @@ if [ ! -f "$CONFIG_FILE" ]; then
     echo 'NOTE_TEMPLATE_PATH="templates/note_template.md"' >> "$CONFIG_FILE"
     echo 'DAILY_TEMPLATE_PATH="templates/daily_note_template.md"' >> "$CONFIG_FILE"
     echo "" >> "$CONFIG_FILE"
+
+    # Check if TEMPLATES array is already defined, if not, add the example config
+    if ! grep -q "declare -A TEMPLATES=" "$CONFIG_FILE"; then
+        echo "# To add a keyword-to-template mapping, add entries to the TEMPLATES array." >> "$CONFIG_FILE"
+        echo "# The 'keyword' is what you type after the '#', and the value is the template path." >> "$CONFIG_FILE"
+        echo "# Example: [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
+        echo "declare -A TEMPLATES=(" >> "$CONFIG_FILE"
+        echo "    [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
+        echo "    [book]=\"templates/book_review_template.md\"" >> "$CONFIG_FILE"
+        echo "    [books2read]=\"templates/book_toread_template.md\"" >> "$CONFIG_FILE"
+        echo ")" >> "$CONFIG_FILE"
+    fi
+
+    echo "" >> "$CONFIG_FILE"
     echo "# Cron schedule for nightly sync. Default is 11:59 PM daily." >> "$CONFIG_FILE"
     echo 'CRON_SCHEDULE="59 23 * * *"' >> "$CONFIG_FILE"
     echo_green "✓ Created new config.sh file."
