@@ -56,8 +56,13 @@ NOTE_STRING="${OTHER_ARGS[0]}"
 COMMAND="${OTHER_ARGS[0]}"
 
 # --- Command Routing ---
-if [[ "$COMMAND" == "-vault" ]]; then
-    # ... (Full vault logic here, unchanged)
+# Allow for commands with a leading hyphen
+if [[ "$COMMAND" == -* ]]; then
+    COMMAND="${COMMAND#-}"
+fi
+
+if [[ "$COMMAND" == "vault" ]]; then
+    "$EDITOR_CMD" "$VAULT_PATH"
     exit 0
 fi
 
@@ -72,11 +77,51 @@ source "$CONFIG_FILE"
 
 # --- Handle all other utility commands ---
 case "$COMMAND" in
-    -debug|-git-setup|-sync-status|-code|-obsidian|-daily)
-        # Delegate to a function or place logic here
-        # This simplified structure assumes the logic from the previous complete script is here
-        echo "Running utility command: $COMMAND"
-        # For now, we'll just exit to show the command was caught
+    debug)
+        set -x
+        ;;
+    git-setup)
+        if [ ! -d "$VAULT_PATH/.git" ]; then
+            git init "$VAULT_PATH"
+            echo "Git repository initialized in '$VAULT_PATH'."
+        else
+            echo "Git repository already exists in '$VAULT_PATH'."
+        fi
+        exit 0
+        ;;
+    sync-status)
+        (cd "$VAULT_PATH" && git status)
+        exit 0
+        ;;
+    code)
+        "$EDITOR_CMD" "$VAULT_PATH"
+        exit 0
+        ;;
+    obsidian)
+        open "obsidian://vault/${VAULT_NAME}"
+        exit 0
+        ;;
+    daily)
+        DAILY_NOTE_PATH="$PROJECT_ROOT/$DAILY_NOTE_TEMPLATE_PATH"
+        if [ ! -f "$DAILY_NOTE_PATH" ]; then
+            echo "Daily note template not found at '$DAILY_NOTE_PATH'" >&2
+            exit 1
+        fi
+        # Create a title like "2023-10-27_Friday"
+        # YYYY-MM-DD_Day
+        DAILY_TITLE="$(date +'%Y-%m-%d_%A')"
+        FILENAME="${FILE_TIMESTAMP}_daily.md"
+        FILEPATH="${VAULT_PATH}/${DAILY_NOTES_SUBDIR}/${FILENAME}"
+        mkdir -p "${VAULT_PATH}/${DAILY_NOTES_SUBDIR}"
+        
+        CONTENT=$(cat "$DAILY_NOTE_PATH" | awk -v ts="$(date +'%Y-%m-%d %H:%M:%S')" -v ti="$DAILY_TITLE" '{
+            gsub(/<% timestamp %>/, ts);
+            gsub(/<% title %>/, ti);
+            print;
+        }')
+        echo "$CONTENT" > "$FILEPATH"
+        echo "Note created: $FILEPATH"
+        "$EDITOR_CMD" -g "$FILEPATH":10
         exit 0
         ;;
 esac
@@ -140,5 +185,5 @@ fi
 echo "Note created: $FILEPATH"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
-    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" -r -g "$FILEPATH":10; else "$EDITOR_CMD" -g "$FILEPATH":10; fi
+    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" "$VAULT_PATH"; else "$EDITOR_CMD" -g "$FILEPATH":10; fi
 fi
