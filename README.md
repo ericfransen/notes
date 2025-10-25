@@ -18,15 +18,15 @@ It decouples the essential task of capturing new knowledge from the context of t
     - Zero-Latency Capture
         - Capture a complete, structured thought with a single command without leaving your console or IDE. Eliminates context switching. Your thought is saved instantly, maintaining flow state (adhering to Zettelkasten's fleeting note principle).
     - Structured In-Capture
-        - Automatically applies the required YYYY-MM-DD_HH-MM timestamp, YAML Frontmatter (Properties), and the status: inbox flag.
+        - Automatically applies the required YY-MM-DD_HH-MM timestamp, YAML Frontmatter (Properties), and the status: inbox flag.
         - Forces consistency at the source. Your note is pre-formatted for later Dataview queries.
     - Intelligent Routing
-        - Use simple flags (note "bug fix" #project-a) to automatically create the correct subdirectory and populate the keywords property.
-        - Automated triage: new notes are filed into their review category immediately (automating 1st step of the PARA workflow).
+        - Use simple flags (note "bug fix" @project-a) to automatically create the correct subdirectory and populate the keywords property.
+        - Automated triage: new notes are filed into their review category immediately (automating 1st step of the PARA workflow (Projects, Areas, Resources, Archives)).
     - Direct Obsidian Launch
         - The `note -obsidian` flag seamlessly switches context, enabling a fast transition from capture to integration/synthesis.
     - Decoupling & Modularity
-        - Separates the capture utility from the scheduled, nightly Git backup job.
+        - Separates the capture utility from the scheduled, nightly Git backup and note processing job.
         - Failures in one stage (capture or sync) do not affect the other.
 
 - Enhanced Workflow: Combining Note CLI Tool & Obsidian Git Plugin
@@ -78,21 +78,21 @@ This system is built on the principle of separating the **tool** (this public re
  **Create a Note**:
     The `note` command has several flags and modes:
 
-   **Create an Atomic Note**: `note "My atomic note" #idea`
+   **Create an Atomic Note**: `note "My atomic note" +idea`
 
    **Create a Daily Note**: `note -daily` (can also be combined with `-v`)
 
-   **Create a Note in Editor (Focus Mode)**: `note #idea`
+   **Create a Note in Editor (Focus Mode)**: `note`
     -   Opens just the single new file for distraction-free writing.
 
-   **Create a Note in Editor (Context Mode)**: `note -v #idea`
+   **Create a Note in Editor (Context Mode)**: `note -v`
     -   The `-v` flag opens the entire vault in VS Code, with your new note active. Use this when you want to search other notes or see the file tree.
 
  **Utility Commands**:
 
-   **Open Vault in VS Code**: `note -code`
+   **Open Note in Vault in VSCode**: `note -code`
 
-   **Open Vault in Obsidian**: `note -obsidian`
+   **Open Note in Vault in Obsidian**: `note -obsidian`
 
    **Reconfigure Vault**: `note -vault`
 
@@ -144,5 +144,7 @@ The script will automatically detect that your vault is already a Git repository
 
 If your nightly sync fails, you can check the log file at `.sync_log` in this project's directory.
 
-- **Error: "Your local branch is behind the remote"**: This means another one of your devices has pushed changes to GitHub. To fix this, navigate to your vault directory in the terminal and run `git pull`.
-- **Error: "Merge conflict detected"**: This can happen after a `git pull` if you and another device have edited the same lines in the same file. To fix this, open your vault folder in a code editor like VS Code, find the file(s) with conflict markers (`<<<<<`, `>>>>>`), edit them to resolve the conflict, and then manually commit the changes.
+- **Error: "Your local branch is behind the remote"**:
+    - To fix this, navigate to your vault directory in the terminal and run `git pull`.
+- **Error: "Merge conflict detected"**:
+    - To fix this, open your vault folder in a code editor, fix the file(s) with conflict markers (`<<<<<`, `>>>>>`), edit them to resolve the conflict, and then manually commit the changes.

@@ -18,11 +18,16 @@ METADATA_YAML=""
 OTHER_ARGS=()
 CUSTOM_TITLE=""
 PROCESSED_DIR=""
+USE_FZF_TEMPLATE=false
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -v)
       OPEN_IN_VAULT="true"
+      shift
+      ;;
+    -template)
+      USE_FZF_TEMPLATE=true
       shift
       ;;
     --title)
@@ -197,6 +202,22 @@ TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdi
 # --- Template Selection Logic ---
 # Default to the standard note template
 TEMPLATE_PATH="$PROJECT_ROOT/$NOTE_TEMPLATE_PATH"
+
+# If -template is used, launch fzf
+if [ "$USE_FZF_TEMPLATE" = true ]; then
+    if ! command -v fzf &> /dev/null; then
+        echo "fzf is not installed. Please install it to use the template selection feature." >&2
+        echo "See: https://github.com/junegunn/fzf#installation" >&2
+        exit 1
+    fi
+    SELECTED_TEMPLATE=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
+    if [ -n "$SELECTED_TEMPLATE" ]; then
+        TEMPLATE_PATH="$SELECTED_TEMPLATE"
+    else
+        echo "No template selected. Aborting." >&2
+        exit 1
+    fi
+fi
 
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
     CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" -v status="$STATUS" '{
