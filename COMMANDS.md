@@ -14,6 +14,9 @@
 - `note @some-directory`
   - Creates a new note in the editor, filed under the `some-diredctory` subdirectory.
 
+- `note %some-template`
+  - Creates a new note in the editor, with the template mapped in the config file to `some-template`.
+
 ## Flags & Options
 
 - `-v`

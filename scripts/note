@@ -19,6 +19,7 @@ OTHER_ARGS=()
 CUSTOM_TITLE=""
 PROCESSED_DIR=""
 USE_FZF_TEMPLATE=false
+TEMPLATE_ALIAS=""
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -51,6 +52,10 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     '@'*)
       PROCESSED_DIR="${1#\@}"
+      shift
+      ;;
+    '%*')
+      TEMPLATE_ALIAS="${1#\%}"
       shift
       ;;
     *)
@@ -210,12 +215,38 @@ if [ "$USE_FZF_TEMPLATE" = true ]; then
         echo "See: https://github.com/junegunn/fzf#installation" >&2
         exit 1
     fi
-    SELECTED_TEMPLATE=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
-    if [ -n "$SELECTED_TEMPLATE" ]; then
-        TEMPLATE_PATH="$SELECTED_TEMPLATE"
+    SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" -printf "%P\n" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
+    if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
+        TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
     else
         echo "No template selected. Aborting." >&2
         exit 1
+    fi
+fi
+
+# If %template-alias is used, look it up in the config
+if [ -n "$TEMPLATE_ALIAS" ]; then
+    for i in "${!TEMPLATE_ALIASES[@]}"; do
+        if [[ "${TEMPLATE_ALIASES[$i]}" == "$TEMPLATE_ALIAS" ]]; then
+            TEMPLATE_PATH="$PROJECT_ROOT/${TEMPLATE_PATHS[$i]}"
+            break
+        fi
+    done
+
+    if [ ! -f "$TEMPLATE_PATH" ]; then
+        echo "Warning: Template alias '%$TEMPLATE_ALIAS' not found in config.sh." >&2
+        if ! command -v fzf &> /dev/null; then
+            echo "fzf is not installed. Please install it to use the template selection feature." >&2
+            echo "See: https://github.com/junegunn/fzf#installation" >&2
+            exit 1
+        fi
+        SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" -printf "%P\n" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
+        if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
+            TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
+        else
+            echo "No template selected. Aborting." >&2
+            exit 1
+        fi
     fi
 fi
 
