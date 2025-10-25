@@ -60,6 +60,10 @@ NOTE_STRING="${OTHER_ARGS[0]}"
 # The first utility command (e.g., -vault, -debug) is also captured here
 COMMAND="${OTHER_ARGS[0]}"
 
+# --- For all other commands, source the config ---
+if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
+source "$CONFIG_FILE"
+
 # --- Command Routing ---
 # Allow for commands with a leading hyphen
 if [[ "$COMMAND" == -* ]]; then
@@ -70,10 +74,6 @@ if [[ "$COMMAND" == "cmd" ]]; then
     cat "$PROJECT_ROOT/COMMANDS.md"
     exit 0
 fi
-
-# --- For all other commands, source the config ---
-if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
-source "$CONFIG_FILE"
 
 if [[ "$COMMAND" == "vault" ]]; then
     if [ -n "$VAULT_PATH" ]; then
