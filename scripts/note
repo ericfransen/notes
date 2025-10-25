@@ -39,8 +39,8 @@ while [[ "$#" -gt 0 ]]; do
         shift
       fi
       ;;
-    '#'*)
-      KEYWORDS+=("$(echo "${1#\#}" | tr '[:upper:]' '[:lower:]')")
+    '@*')
+      KEYWORDS+=("$(echo "${1#\@}" | tr '[:upper:]' '[:lower:]')")
       shift
       ;;
     *)

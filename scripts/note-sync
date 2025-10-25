@@ -136,13 +136,12 @@ else
     update_untitled_notes
 fi
 
-# --- Cleanup Step: Delete blank notes ---
+# --- Cleanup Step: Delete empty notes ---
 find . -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
-    is_untitled=$(grep -c "title: untitled" "$file")
     body_section=$(sed -n '/## Body/,/---/p' "$file" | sed '1d;$d')
     trimmed_body=$(echo "$body_section" | tr -d '[:space:]')
-    if [[ $is_untitled -gt 0 ]] && [[ -z "$trimmed_body" ]]; then
-        echo "Deleting blank note: $file"
+    if [[ -z "$trimmed_body" ]]; then
+        echo "Deleting empty note: $file"
         git rm "$file"
     fi
 done
