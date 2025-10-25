@@ -12,6 +12,11 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 CONFIG_FILE="$PROJECT_ROOT/config.sh"
 
 # --- Argument Parsing ---
+OPEN_IN_VAULT="false"
+KEYWORDS=()
+METADATA_YAML=""
+OTHER_ARGS=()
+CUSTOM_TITLE=""
 PROCESSED_DIR=""
 
 while [[ "$#" -gt 0 ]]; do
@@ -35,11 +40,11 @@ while [[ "$#" -gt 0 ]]; do
         shift
       fi
       ;;
-    '+*')
+    '+'*)
       KEYWORDS+=("$(echo "${1#\+}" | tr '[:upper:]' '[:lower:]')")
       shift
       ;;
-    '@*')
+    '@'*)
       PROCESSED_DIR="${1#\@}"
       shift
       ;;
