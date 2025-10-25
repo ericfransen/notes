@@ -51,6 +51,91 @@ fi
 
 echo "✓ Git pre-check passed. No conflicts detected."
 
+# --- Update Untitled Notes Step ---
+update_untitled_notes() {
+    echo "Checking for untitled notes to rename..."
+    # Create a timestamp for the beginning of the day
+    touch -t $(date +"%Y%m%d0000") /tmp/start_of_day
+    find . -name "*untitled*.md" -type f -newer /tmp/start_of_day -print0 | while IFS= read -r -d $'\0' file; do
+        title=$(grep -m 1 '^title: ' "$file" | sed 's/^title: //')
+        if [[ -n "$title" ]] && [[ "$title" != "untitled" ]]; then
+            kebab_title=$(echo "$title" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]')
+            
+            #get the timestamp from the filename
+            timestamp=$(basename "$file" | cut -d'_' -f1-2)
+            
+            new_filename="${timestamp}_${kebab_title}.md"
+            
+            #get the directory of the file
+            dir=$(dirname "$file")
+            
+            new_filepath="${dir}/${new_filename}"
+
+            if [ "$file" != "$new_filepath" ]; then
+                echo "Renaming '$file' to '$new_filepath'"
+                # Backup the original file
+                mv "$file" "$file.bak"
+                # Rename the file
+                if mv "$file.bak" "$new_filepath"; then
+                    # if rename is successful, remove the backup
+                    rm -f "$file.bak"
+                    git add "$new_filepath"
+                    git rm "$file"
+                    echo "✓ Renamed '$file' to '$new_filepath'" >> "$LOG_FILE"
+                else
+                    # if rename fails, restore the backup
+                    mv "$file.bak" "$file"
+                    echo "✗ ERROR: Failed to rename '$file' to '$new_filepath'. Restored original file." >> "$LOG_FILE"
+                fi
+            fi
+        fi
+    done
+}
+
+rename_all_untitled_notes() {
+    echo "Checking for all untitled notes to rename..."
+    find . -name "*untitled*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
+        title=$(grep -m 1 '^title: ' "$file" | sed 's/^title: //')
+        if [[ -n "$title" ]] && [[ "$title" != "untitled" ]]; then
+            kebab_title=$(echo "$title" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]')
+            
+            #get the timestamp from the filename
+            timestamp=$(basename "$file" | cut -d'_' -f1-2)
+            
+            new_filename="${timestamp}_${kebab_title}.md"
+            
+            #get the directory of the file
+            dir=$(dirname "$file")
+            
+            new_filepath="${dir}/${new_filename}"
+
+            if [ "$file" != "$new_filepath" ]; then
+                echo "Renaming '$file' to '$new_filepath'"
+                # Backup the original file
+                mv "$file" "$file.bak"
+                # Rename the file
+                if mv "$file.bak" "$new_filepath"; then
+                    # if rename is successful, remove the backup
+                    rm -f "$file.bak"
+                    git add "$new_filepath"
+                    git rm "$file"
+                    echo "✓ Renamed '$file' to '$new_filepath'" >> "$LOG_FILE"
+                else
+                    # if rename fails, restore the backup
+                    mv "$file.bak" "$file"
+                    echo "✗ ERROR: Failed to rename '$file' to '$new_filepath'. Restored original file." >> "$LOG_FILE"
+                fi
+            fi
+        fi
+    done
+}
+
+if [[ "$1" == "--rename-all" ]]; then
+    rename_all_untitled_notes
+else
+    update_untitled_notes
+fi
+
 # --- Cleanup Step: Delete blank notes ---
 find . -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
     is_untitled=$(grep -c "title: untitled" "$file")
