@@ -12,11 +12,7 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 CONFIG_FILE="$PROJECT_ROOT/config.sh"
 
 # --- Argument Parsing ---
-OPEN_IN_VAULT="false"
-KEYWORDS=()
-METADATA_YAML=""
-OTHER_ARGS=()
-CUSTOM_TITLE=""
+PROCESSED_DIR=""
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -30,7 +26,7 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --*)
       key="${1#--}"
-      if [[ -n "$2" ]] && [[ "$2" != --* ]] && [[ "$2" != '#'* ]]; then
+      if [[ -n "$2" ]] && [[ "$2" != --* ]] && [[ "$2" != '@'* ]] && [[ "$2" != '+'* ]]; then
         value="$2"
         METADATA_YAML+="${key}: \"${value}\"\n"
         shift; shift
@@ -39,8 +35,12 @@ while [[ "$#" -gt 0 ]]; do
         shift
       fi
       ;;
+    '+*')
+      KEYWORDS+=("$(echo "${1#\+}" | tr '[:upper:]' '[:lower:]')")
+      shift
+      ;;
     '@*')
-      KEYWORDS+=("$(echo "${1#\@}" | tr '[:upper:]' '[:lower:]')")
+      PROCESSED_DIR="${1#\@}"
       shift
       ;;
     *)
@@ -161,12 +161,19 @@ if [[ -n "$NOTE_STRING" ]]; then
     MODE="atomic"
 fi
 
-DEFAULT_SUBDIR="00 - Inbox"
+if [[ -n "$PROCESSED_DIR" ]]; then
+    SUBDIR="$PROCESSED_DIR"
+    STATUS="processed"
+else
+    SUBDIR="00 - Inbox"
+    STATUS="inbox"
+fi
+
 to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d_%H-%M')
-SUBDIR="$DEFAULT_SUBDIR"; TITLE=""; BODY=""; KEYWORDS_STRING=""
-if [ ${#KEYWORDS[@]} -gt 0 ]; then SUBDIR="${KEYWORDS[0]}"; KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
+TITLE=""; BODY=""; KEYWORDS_STRING=""
+if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
 if [ "$MODE" == "atomic" ]; then
     TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
     BODY="$NOTE_STRING"
@@ -197,12 +204,13 @@ if [ ${#KEYWORDS[@]} -gt 0 ]; then
 fi
 
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
-    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" '{
+    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" -v status="$STATUS" '{
         gsub(/<% timestamp %>/, ts);
         gsub(/<% title %>/, ti);
         gsub(/<% keywords %>/, kw);
         gsub(/<% body %>/, bd);
         gsub(/<% metadata %>/, meta);
+        gsub(/<% status %>/, status);
         print;
     }')
     echo "$CONTENT" > "$FILEPATH"
@@ -211,5 +219,5 @@ fi
 echo "Note created: $FILEPATH"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
-    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" "$VAULT_PATH"; else "$EDITOR_CMD" -g "$FILEPATH":10; fi
+    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" "$VAULT_PATH" "$FILEPATH"; else "$EDITOR_CMD" -g "$FILEPATH":10; fi
 fi

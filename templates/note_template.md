@@ -2,7 +2,7 @@
 date: <% timestamp %>
 title: <% title %>
 keywords: <% keywords %>
-status: inbox
+status: <% status %>
 <% metadata %>
 ---
 

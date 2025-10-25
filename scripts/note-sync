@@ -131,7 +131,31 @@ rename_all_untitled_notes() {
 }
 
 if [[ "$1" == "--rename-all" ]]; then
-    rename_all_untitled_notes
+rename_all_untitled_notes
+
+# --- Archive Processed Notes Step ---
+archive_processed_notes() {
+    echo "Archiving processed notes from the inbox..."
+    inbox_path="$VAULT_PATH/00 - Inbox"
+    if [ ! -d "$inbox_path" ]; then
+        return
+    fi
+
+    find "$inbox_path" -name "*.md" -type f -print0 | while IFS= read -r -d 
+\0' file; do
+        status=$(grep -m 1 '^status: ' "$file" | sed 's/^status: //')
+        if [[ "$status" == "processed" ]]; then
+            archive_dir="$VAULT_PATH/Archive/$(date +'%Y')/$(date +'%m')"
+            mkdir -p "$archive_dir"
+            echo "Archiving '$file' to '$archive_dir'"
+            mv "$file" "$archive_dir/"
+            git add "$archive_dir/$(basename "$file")"
+            git rm "$file"
+        fi
+    done
+}
+
+archive_processed_notes
 else
     update_untitled_notes
 fi
