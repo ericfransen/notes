@@ -9,7 +9,7 @@
   - Creates an "atomic note" instantly. The text is the body of the note. No editor is launched.
 
 - `note +keyword`
-  - Creates a new note in the editor, multiple keywords permitted.
+  - Creates a new note in the editor, with keyword metadata for search and linking; multiple keywords permitted.
 
 - `note @some-directory`
   - Creates a new note in the editor, filed under the `some-diredctory` subdirectory.
