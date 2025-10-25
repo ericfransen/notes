@@ -226,12 +226,12 @@ fi
 
 # If %template-alias is used, look it up in the config
 if [ -n "$TEMPLATE_ALIAS" ]; then
-    for i in "${!TEMPLATE_ALIASES[@]}"; do
-        if [[ "${TEMPLATE_ALIASES[$i]}" == "$TEMPLATE_ALIAS" ]]; then
-            TEMPLATE_PATH="$PROJECT_ROOT/${TEMPLATE_PATHS[$i]}"
+    while read -r alias path; do
+        if [ -n "$alias" ] && [ "$alias" == "$TEMPLATE_ALIAS" ]; then
+            TEMPLATE_PATH="$PROJECT_ROOT/$path"
             break
         fi
-    done
+    done <<< "$TEMPLATE_MAPPINGS"
 
     if [ ! -f "$TEMPLATE_PATH" ]; then
         echo "Warning: Template alias '%$TEMPLATE_ALIAS' not found in config.sh." >&2

@@ -33,12 +33,18 @@ if ! grep -q "# --- Template Mappings ---" "$CONFIG_FILE"; then
     echo "" >> "$CONFIG_FILE"
     echo "# --- Template Mappings ---" >> "$CONFIG_FILE"
     echo "# Create shortcuts for your most used templates." >> "$CONFIG_FILE"
-    echo "# The key is the shortcut name (e.g., \"meeting\") and the value is the path to the template file." >> "$CONFIG_FILE"
+    echo "# This system uses a simple multi-line string for compatibility with all Bash versions." >> "$CONFIG_FILE"
+    echo "# The alternative, an associative array, is not used because it requires Bash 4.0+." >> "$CONFIG_FILE"
+    echo "#" >> "$CONFIG_FILE"
+    echo "# To add a mapping, just add a new line inside the quotes with the format:" >> "$CONFIG_FILE"
+    echo "# ALIAS PATH/TO/TEMPLATE.md" >> "$CONFIG_FILE"
+    echo "#" >> "$CONFIG_FILE"
     echo "# Example:" >> "$CONFIG_FILE"
-    echo "# TEMPLATE_ALIASES=(\"meeting\" \"book\")" >> "$CONFIG_FILE"
-    echo "# TEMPLATE_PATHS=(\"templates/meeting_template.md\" \"templates/book_review_template.md\")" >> "$CONFIG_FILE"
-    echo "TEMPLATE_ALIASES=()" >> "$CONFIG_FILE"
-    echo "TEMPLATE_PATHS=()" >> "$CONFIG_FILE"
+    echo "# TEMPLATE_MAPPINGS=\"" >> "$CONFIG_FILE"
+    echo "# meeting templates/meeting_template.md" >> "$CONFIG_FILE"
+    echo "# book templates/book_review_template.md" >> "$CONFIG_FILE"
+    echo "# \"" >> "$CONFIG_FILE"
+    echo "TEMPLATE_MAPPINGS=\"\"" >> "$CONFIG_FILE"
 fi
 
 # --- 3. Configure Vault Path ---
@@ -59,7 +65,7 @@ fi
 echo ""
 
 # --- 4. Set up Git Repository ---
-echo_bold "Step 4: Set up Private Git Repository for Notes"
+echo_bold "Step 3: Set up Private Git Repository for Notes"
 if [ -d "$VAULT_PATH/.git" ]; then
     echo "✓ Your vault at '$VAULT_PATH' is already a Git repository."
 else
@@ -73,7 +79,7 @@ fi
 echo ""
 
 # --- 5. Install Commands & Cron Job ---
-echo_bold "Step 5: Install Global Commands & Cron Job"
+echo_bold "Step 4: Install Global Commands & Cron Job"
 "$PROJECT_ROOT/scripts/install.sh"
 echo ""
 source "$CONFIG_FILE" # Re-source to get the CRON_SCHEDULE
