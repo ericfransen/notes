@@ -221,8 +221,15 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
     echo "$CONTENT" > "$FILEPATH"
 fi
 
+body_line_number=$(echo "$CONTENT" | grep -n "## Body" | cut -d: -f1)
+cursor_line_number=$((body_line_number + 1))
+
 echo "Note created: $FILEPATH"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
-    if [[ "$OPEN_IN_VAULT" == "true" ]]; then "$EDITOR_CMD" "$VAULT_PATH" "$FILEPATH"; else "$EDITOR_CMD" -g "$FILEPATH":10; fi
+    if [[ "$OPEN_IN_VAULT" == "true" ]]; then 
+        "$EDITOR_CMD" "$VAULT_PATH" --goto "$FILEPATH":$cursor_line_number; 
+    else 
+        "$EDITOR_CMD" -g "$FILEPATH":$cursor_line_number; 
+    fi
 fi
