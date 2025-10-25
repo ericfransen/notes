@@ -29,17 +29,16 @@ fi
 echo ""
 
 # --- 2. Add Template Mapping Section (if missing) ---
-if ! grep -q "# --- Template-Keyword Mapping ---" "$CONFIG_FILE"; then
+if ! grep -q "# --- Template Mappings ---" "$CONFIG_FILE"; then
     echo "" >> "$CONFIG_FILE"
-    echo "# --- Template-Keyword Mapping ---" >> "$CONFIG_FILE"
-    echo "# To map a keyword (e.g., #meeting) to a specific template, uncomment" >> "$CONFIG_FILE"
-    echo "# the following lines and add your own mappings." >> "$CONFIG_FILE"
-    echo "# The 'keyword' is the key, and the template path is the value." >> "$CONFIG_FILE"
-    echo "#" >> "$CONFIG_FILE"
-    echo "# declare -A TEMPLATES=(" >> "$CONFIG_FILE"
-    echo "#   [meeting]=\"templates/meeting_template.md\"" >> "$CONFIG_FILE"
-    echo "#   [book]=\"templates/book_review_template.md\"" >> "$CONFIG_FILE"
-    echo "# )" >> "$CONFIG_FILE"
+    echo "# --- Template Mappings ---" >> "$CONFIG_FILE"
+    echo "# Create shortcuts for your most used templates." >> "$CONFIG_FILE"
+    echo "# The key is the shortcut name (e.g., \"meeting\") and the value is the path to the template file." >> "$CONFIG_FILE"
+    echo "# Example:" >> "$CONFIG_FILE"
+    echo "# TEMPLATE_ALIASES=(\"meeting\" \"book\")" >> "$CONFIG_FILE"
+    echo "# TEMPLATE_PATHS=(\"templates/meeting_template.md\" \"templates/book_review_template.md\")" >> "$CONFIG_FILE"
+    echo "TEMPLATE_ALIASES=()" >> "$CONFIG_FILE"
+    echo "TEMPLATE_PATHS=()" >> "$CONFIG_FILE"
 fi
 
 # --- 3. Configure Vault Path ---

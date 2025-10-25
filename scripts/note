@@ -215,7 +215,7 @@ if [ "$USE_FZF_TEMPLATE" = true ]; then
         echo "See: https://github.com/junegunn/fzf#installation" >&2
         exit 1
     fi
-    SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" -printf "%P\n" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
+    SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | sed "s|$PROJECT_ROOT/templates/||" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
     if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
         TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
     else
@@ -240,7 +240,7 @@ if [ -n "$TEMPLATE_ALIAS" ]; then
             echo "See: https://github.com/junegunn/fzf#installation" >&2
             exit 1
         fi
-        SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" -printf "%P\n" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
+        SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | sed "s|$PROJECT_ROOT/templates/||" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
         if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
             TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
         else
