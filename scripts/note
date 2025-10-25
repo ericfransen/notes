@@ -61,11 +61,6 @@ if [[ "$COMMAND" == -* ]]; then
     COMMAND="${COMMAND#-}"
 fi
 
-if [[ "$COMMAND" == "vault" ]]; then
-    "$EDITOR_CMD" "$VAULT_PATH"
-    exit 0
-fi
-
 if [[ "$COMMAND" == "cmd" ]]; then
     cat "$PROJECT_ROOT/COMMANDS.md"
     exit 0
@@ -74,6 +69,33 @@ fi
 # --- For all other commands, source the config ---
 if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
 source "$CONFIG_FILE"
+
+if [[ "$COMMAND" == "vault" ]]; then
+    if [ -n "$VAULT_PATH" ]; then
+        echo "Your vault is currently set to: $VAULT_PATH"
+        read -p "Do you want to change it? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            read -p "Enter the new path to your vault: " new_vault_path
+            # Update the config file
+            sed -i '' "s|VAULT_PATH=.*|VAULT_PATH=\"$new_vault_path\"|" "$CONFIG_FILE"
+            echo "Vault path updated to: $new_vault_path"
+        else
+            read -p "Do you want to open the vault? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                "$EDITOR_CMD" "$VAULT_PATH"
+            fi
+        fi
+    else
+        echo "Your vault is not yet configured."
+        read -p "Enter the path to your vault: " new_vault_path
+        # Update the config file
+        echo "VAULT_PATH=\"$new_vault_path\"" >> "$CONFIG_FILE"
+        echo "Vault path set to: $new_vault_path"
+    fi
+    exit 0
+fi
 
 # --- Handle all other utility commands ---
 case "$COMMAND" in

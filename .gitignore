@@ -6,3 +6,6 @@ config.sh
 
 # Feature list documentation.
 feature_list.md
+
+# put your personal templates here:
+templates/personal/*
