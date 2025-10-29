@@ -54,6 +54,10 @@ while [[ "$#" -gt 0 ]]; do
       PROCESSED_DIR="${1#\@}"
       shift
       ;;
+    %)
+      USE_FZF_TEMPLATE=true
+      shift
+      ;;
     '%*')
       TEMPLATE_ALIAS="${1#\%}"
       shift

@@ -8,4 +8,4 @@ config.sh
 feature_list.md
 
 # put your personal templates here:
-templates/personal/*
+templates/_personal/*

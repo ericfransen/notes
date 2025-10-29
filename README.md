@@ -47,7 +47,7 @@ This system is built on the principle of separating the **tool** (this public re
 ## Prerequisites
 
 1.  **(Recommended) GitHub CLI**: For a fully automated setup. Install it from [cli.github.com](https://cli.github.com).
-2.  **(Recommended) VS Code `code` command**: For opening notes in an editor, although you can specify your own editor command in the config file.
+2.  **(Recommended) VSCode `code` command**: For opening notes in an editor, although you can specify your own editor command in the config file.
 
 ## Installation
 
@@ -79,6 +79,7 @@ This system is built on the principle of separating the **tool** (this public re
     The `note` command has several flags and modes:
 
    **Create an Atomic Note**: `note "My atomic note" +idea`
+    -   Tip: use `\n` or other markdown in your atomic note for nicely formatted notes to process later
 
    **Create a Daily Note**: `note -daily` (can also be combined with `-v`)
 
