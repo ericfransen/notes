@@ -133,8 +133,10 @@ This system provides a single main script, `note`, with several commands and fla
 
    -   The key is the template alias (e.g., "daily") and the value is the output directory relative to VAULT_PATH (e.g., "02__Dailies").
 
+       ```
        TEMPLATE_OUTPUT_DIRS="daily 02__Dailies
        meeting 10__Meetings"
+       ```
 
 > **Note**: These multi-line string template mappings are the most brittle part of this system, but was chosen because the alternative, an associative array, requires Bash 4.0+, so make sure to follow the above format.
 
