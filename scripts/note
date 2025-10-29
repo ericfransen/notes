@@ -284,6 +284,12 @@ if [ -n "$TEMPLATE_ALIAS" ]; then
 fi
 
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
+    echo "ts: $TIMESTAMP"
+    echo "ti: $TITLE"
+    echo "kw: $KEYWORDS_STRING"
+    echo "bd: $BODY"
+    echo "meta: $METADATA_YAML"
+    echo "status: $STATUS"
     CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" -v status="$STATUS" '{
         gsub(/<% timestamp %>/, ts);
         gsub(/<% title %>/, ti);
@@ -303,8 +309,10 @@ echo "Note created: $FILEPATH"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
     if [[ "$OPEN_IN_VAULT" == "true" ]]; then 
+        echo "Executing: $EDITOR_CMD $VAULT_PATH --goto $FILEPATH:$cursor_line_number"
         "$EDITOR_CMD" "$VAULT_PATH" --goto "$FILEPATH":$cursor_line_number; 
     else 
+        echo "Executing: $EDITOR_CMD -g $FILEPATH:$cursor_line_number"
         "$EDITOR_CMD" -g "$FILEPATH":$cursor_line_number; 
     fi
 fi

@@ -177,13 +177,7 @@ cleanup_empty_notes
 
 # --- Git Sync Step ---
 rm -f ./.obsidian/workspace.json ./.obsidian/workspaces.json
-echo "--- Git Status Before Add ---" >> "$LOG_FILE"
-git status --porcelain >> "$LOG_FILE"
 git add .
-echo "--- Git Status After Add ---" >> "$LOG_FILE"
-git status --porcelain >> "$LOG_FILE"
-echo "--- Git Diff Staged ---" >> "$LOG_FILE"
-git diff --staged --name-only >> "$LOG_FILE"
 if ! git diff --staged --quiet; then
     echo "Changes detected. Committing and pushing..." >> "$LOG_FILE"
     git commit -m "chore: Daily sync $(date +'%Y-%m-%d %H:%M')"
