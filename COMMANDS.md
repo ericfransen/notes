@@ -13,6 +13,7 @@
 
 - `note @some-directory`
   - Creates a new note in the editor, filed under the `some-subdirectory` subdirectory.
+  - Tip: you can file in nested subdirectories. try: `@some-dir/sub-dir`
 
 - `note %some-template`
   - Creates a new note in the editor, with the template mapped in the config file to `some-template`.

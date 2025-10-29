@@ -366,7 +366,6 @@ to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d_%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
-debug_log "DAY_OF_WEEK is $DAY_OF_WEEK"
 TITLE=""; BODY=""; KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
 if [ "$COMMAND" == "daily" ]; then
@@ -457,19 +456,17 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
     # echo "body: $BODY"
     # echo "meta: $METADATA_YAML"
     # echo "status: $STATUS"
-    CONTENT_COMMAND="cat \"$TEMPLATE_PATH\" | awk -v ts=\"$TIMESTAMP\" -v ti=\"$TITLE\" -v kw=\"$KEYWORDS_STRING\" -v bd=\"$BODY\" -v meta=\"$METADATA_YAML\" -v status=\"$STATUS\" -v day=\"$DAY_OF_WEEK\" '{\
-        gsub(/<% timestamp %>/, ts);\
-        gsub(/<% title %>/, ti);\
-        gsub(/<% keywords %>/, kw);\
-        gsub(/<% body %>/, bd);\
-        gsub(/<% metadata %>/, meta);\
-        gsub(/<% status %>/, status);\
-        gsub(/<% day %>/, day);\
-        print;\
-    }'"
-    debug_log "AWK Command: $CONTENT_COMMAND" # Debug echo
-    CONTENT=$(eval "$CONTENT_COMMAND") # Execute the command
-    debug_log "Generated Content:\n$CONTENT" # Debug echo
+    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" -v status="$STATUS" -v day="$DAY_OF_WEEK" -v folder="$SUBDIR" '{
+        gsub(/<% timestamp %>/, ts);
+        gsub(/<% title %>/, ti);
+        gsub(/<% keywords %>/, kw);
+        gsub(/<% body %>/, bd);
+        gsub(/<% metadata %>/, meta);
+        gsub(/<% status %>/, status);
+        gsub(/<% day %>/, day);
+        gsub(/<% folder %>/, folder);
+        print;
+    }')
     echo "$CONTENT" > "$FILEPATH"
 fi
 

@@ -1,6 +1,8 @@
 ---
 date: <% timestamp %>
 day: <% day %>
+Title: <% title %>
+folder: <% folder %>
 tags: meeting
 attendees:
 ---
