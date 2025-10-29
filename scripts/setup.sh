@@ -62,6 +62,12 @@ if [ -z "$DAILY_DIR" ]; then
     read -p "Enter path for your daily notes directory (e.g., 10 - Dailies): " daily_dir
     echo "DAILY_DIR=\"$daily_dir\"" >> "$CONFIG_FILE"
 fi
+
+# Create the daily notes directory if it doesn't exist
+if [ ! -d "$VAULT_PATH/$DAILY_DIR" ]; then
+    mkdir -p "$VAULT_PATH/$DAILY_DIR"
+    echo "✓ Created daily notes directory at '$VAULT_PATH/$DAILY_DIR'."
+fi
 echo ""
 
 # --- 4. Set up Git Repository ---
