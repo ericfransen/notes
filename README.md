@@ -123,21 +123,21 @@ This system provides a single main script, `note`, with several commands and fla
 
  **VSCODE_PROFILE**: `OPTIONAL: VSCode profile name for notes. If you want to use a specific profile, change this value.`
 
- **--- Template Mappings ---**: `Create shortcuts for your most used templates using a simple multi-line string for compatibility with all Bash versions.`
+ **--- Template Mappings ---** `Create shortcuts for your most used templates using a simple multi-line string for compatibility with all Bash versions.`
 
-        ```
-        TEMPLATE_MAPPINGS="daily templates/daily_note_template.md
-        meeting templates/meetings/meeting_template.md"
-        ```
+       ```
+       TEMPLATE_MAPPINGS="daily templates/daily_note_template.md
+       meeting templates/meetings/meeting_template.md"
+       ```
 
- **--- Template Output Directories ---**: `Define custom output directories for notes created from specific templates.`
+ **--- Template Output Directories ---** `Define custom output directories for notes created from specific templates.`
 
-    -   The key is the template alias (e.g., "daily") and the value is the output directory relative to VAULT_PATH (e.g., "02__Dailies").
+   -   The key is the template alias (e.g., "daily") and the value is the output directory relative to VAULT_PATH (e.g., "02__Dailies").
 
-        ```
-        TEMPLATE_OUTPUT_DIRS="daily 02__Dailies
-        meeting 10__Meetings"
-        ```
+       ```
+       TEMPLATE_OUTPUT_DIRS="daily 02__Dailies
+       meeting 10__Meetings"
+       ```
 
 > **Note**: These multi-line string template mappings are the most brittle part of this system, but was chosen because the alternative, an associative array, requires Bash 4.0+, so make sure to follow the above format.
 
