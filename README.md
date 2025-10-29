@@ -76,17 +76,21 @@ This system is built on the principle of separating the **tool** (this public re
 ## How It Works
 
  **Create a Note**:
+
     The `note` command has several flags and modes:
 
    **Create an Atomic Note**: `note "My atomic note" +idea`
-    -   Tip: use `\n` or other markdown in your atomic note for nicely formatted notes to process later
+
+    -   Tip: use `\n` or other markdown in your atomic note for nicely formatted notes to process later.
 
    **Create a Daily Note**: `note -daily` (can also be combined with `-v`)
 
    **Create a Note in Editor (Focus Mode)**: `note`
+
     -   Opens just the single new file for distraction-free writing.
 
    **Create a Note in Editor (Context Mode)**: `note -v`
+
     -   The `-v` flag opens the entire vault in VS Code, with your new note active. Use this when you want to search other notes or see the file tree.
 
  **Utility Commands**:
@@ -100,6 +104,42 @@ This system is built on the principle of separating the **tool** (this public re
    **Setup Git Remote**: `note -git-setup`
 
 This system provides a single main script, `note`, with several commands and flags. For a full list of commands and what they do, please see [COMMANDS.md](./COMMANDS.md).
+
+## Configuration
+
+   -   This repo contains a `config.sh` shell script configuration file that gets auto generated after running the setup script.
+
+   -   The config file contains:
+
+ **EDITOR_CMD**:  `Command you use for your editor of choice`
+
+ **NOTE_TEMPLATE_PATH**: `Default note template`
+
+ **DAILY_TEMPLATE_PATH**: `Daily note template which gets created on day's first run, then opened on subsequent runs for daily journaling`
+ 
+ **VAULT_PATH**: `Obsidian vault path; you don't have to use Obsidian so this could just be a directory of markdown notes (git enabled optional)`
+
+ **DAILY_DIR**: `Directory to file your daily journaling notes`
+
+ **VSCODE_PROFILE**: `OPTIONAL: VSCode profile name for notes. If you want to use a specific profile, change this value.`
+
+ **--- Template Mappings ---**: `Create shortcuts for your most used templates using a simple multi-line string for compatibility with all Bash versions.`
+
+        ```
+        TEMPLATE_MAPPINGS="daily templates/daily_note_template.md
+        meeting templates/meetings/meeting_template.md"
+        ```
+
+ **--- Template Output Directories ---**: `Define custom output directories for notes created from specific templates.`
+
+    -   The key is the template alias (e.g., "daily") and the value is the output directory relative to VAULT_PATH (e.g., "02__Dailies").
+
+        ```
+        TEMPLATE_OUTPUT_DIRS="daily 02__Dailies
+        meeting 10__Meetings"
+        ```
+
+> **Note**: These multi-line string template mappings are the most brittle part of this system, but was chosen because the alternative, an associative array, requires Bash 4.0+, so make sure to follow the above format.
 
 ## Nightly Cron Job (Optional)
 

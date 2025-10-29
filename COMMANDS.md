@@ -12,7 +12,7 @@
   - Creates a new note in the editor, with keyword metadata for search and linking; multiple keywords permitted.
 
 - `note @some-directory`
-  - Creates a new note in the editor, filed under the `some-diredctory` subdirectory.
+  - Creates a new note in the editor, filed under the `some-subdirectory` subdirectory.
 
 - `note %some-template`
   - Creates a new note in the editor, with the template mapped in the config file to `some-template`.
