@@ -1,5 +1,11 @@
 #!/bin/bash
 
+debug_log() {
+    if [ "$DEBUG_MODE" = "true" ]; then
+        echo "DEBUG: $@"
+    fi
+}
+
 # --- Find Project Root ---
 SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do
@@ -16,6 +22,7 @@ if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup
 source "$CONFIG_FILE"
 
 # --- Argument Parsing ---
+DEBUG_MODE="false"
 OPEN_IN_VAULT="false"
 KEYWORDS=()
 METADATA_YAML=""
@@ -27,6 +34,10 @@ TEMPLATE_ALIAS=""
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+    -debug)
+      DEBUG_MODE="true"
+      shift
+      ;;
     -v)
       OPEN_IN_VAULT="true"
       shift
@@ -84,6 +95,10 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
+
+if [ "$DEBUG_MODE" = "true" ]; then
+    set -x
+fi
 
 # The first non-flag argument is the note string for atomic notes
 NOTE_STRING="${OTHER_ARGS[0]}"
@@ -188,7 +203,7 @@ if [ "$USE_FZF_TEMPLATE" = true ] || [ "$COMMAND" == "daily" ] || [ -n "$TEMPLAT
     if [ -n "$TEMPLATE_ALIAS" ]; then
         echo "Searching for [$TEMPLATE_ALIAS] template..."
         while read -r alias path; do
-        echo "DEBUG: Parsing template mapping - alias: '$alias', path: '$path'"
+        debug_log "Parsing template mapping - alias: '$alias', path: '$path'"
         if [ -n "$alias" ] && [ "$alias" == "$TEMPLATE_ALIAS" ]; then
                 TEMPLATE_PATH="$PROJECT_ROOT/$path"
                 break
@@ -268,9 +283,6 @@ case "$COMMAND" in
         fi
         # If no existing note, fall through to create a new one
         ;;
-    debug)
-        set -x
-        ;;
     git-setup)
         if [ ! -d "$VAULT_PATH/.git" ]; then
             git init "$VAULT_PATH"
@@ -335,6 +347,10 @@ if [ -n "$TEMPLATE_ALIAS" ]; then
     done <<< "$TEMPLATE_OUTPUT_DIRS"
 fi
 
+if [ -n "$TEMPLATE_ALIAS" ] && [ -z "$SUBDIR_FROM_TEMPLATE" ]; then
+    echo "Warning: No output directory mapping found for template alias '$TEMPLATE_ALIAS'. Using default inbox." >&2
+fi
+
 if [ -n "$SUBDIR_FROM_TEMPLATE" ]; then
     SUBDIR="$SUBDIR_FROM_TEMPLATE"
     STATUS="templated" # New status for notes from templates with custom output dirs
@@ -350,7 +366,7 @@ to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d_%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
-echo "DEBUG: DAY_OF_WEEK is $DAY_OF_WEEK"
+debug_log "DAY_OF_WEEK is $DAY_OF_WEEK"
 TITLE=""; BODY=""; KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
 if [ "$COMMAND" == "daily" ]; then
@@ -451,9 +467,9 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
         gsub(/<% day %>/, day);\
         print;\
     }'"
-    echo "DEBUG: AWK Command: $CONTENT_COMMAND" # Debug echo
+    debug_log "AWK Command: $CONTENT_COMMAND" # Debug echo
     CONTENT=$(eval "$CONTENT_COMMAND") # Execute the command
-    echo "DEBUG: Generated Content:\n$CONTENT" # Debug echo
+    debug_log "Generated Content:\n$CONTENT" # Debug echo
     echo "$CONTENT" > "$FILEPATH"
 fi
 
@@ -461,15 +477,15 @@ body_line_number=$(echo "$CONTENT" | grep -n "## Body" | cut -d: -f1)
 cursor_line_number=$((body_line_number + 1))
 
 echo "Note created: $FILEPATH"
-echo "DEBUG: MODE is $MODE"
+debug_log "MODE is $MODE"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
     if [[ "$OPEN_IN_VAULT" == "true" ]]; then 
         # echo "Executing: $EDITOR_CMD $VAULT_PATH --goto $FILEPATH:$cursor_line_number"
-        echo "DEBUG: Executing command: \"$EDITOR_CMD\" \"$VAULT_PATH\" --goto \"$FILEPATH\":$cursor_line_number"
+        debug_log "Executing command: \"$EDITOR_CMD\" \"$VAULT_PATH\" --goto \"$FILEPATH\":$cursor_line_number"
         "$EDITOR_CMD" "$VAULT_PATH" --goto "$FILEPATH":$cursor_line_number; 
     else 
-        echo "DEBUG: Executing command: \"$EDITOR_CMD\" -g \"$FILEPATH\":$cursor_line_number"
+        debug_log "Executing command: \"$EDITOR_CMD\" -g \"$FILEPATH\":$cursor_line_number"
         "$EDITOR_CMD" -g "$FILEPATH":$cursor_line_number; 
     fi
 fi

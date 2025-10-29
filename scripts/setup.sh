@@ -47,6 +47,24 @@ if ! grep -q "# --- Template Mappings ---" "$CONFIG_FILE"; then
     echo "TEMPLATE_MAPPINGS=\"\"" >> "$CONFIG_FILE"
 fi
 
+# --- Add Template Output Directories Section (if missing) ---
+if ! grep -q "# --- Template Output Directories ---" "$CONFIG_FILE"; then
+    echo "" >> "$CONFIG_FILE"
+    echo "# --- Template Output Directories ---" >> "$CONFIG_FILE"
+    echo "# (Optional) Specify output directories for notes created from specific templates." >> "$CONFIG_FILE"
+    echo "# This allows you to route notes to different folders based on the template used." >> "$CONFIG_FILE"
+    echo "#" >> "$CONFIG_FILE"
+    echo "# Format is a multi-line string, similar to TEMPLATE_MAPPINGS:" >> "$CONFIG_FILE"
+    echo "# ALIAS PATH/TO/OUTPUT/DIR" >> "$CONFIG_FILE"
+    echo "#" >> "$CONFIG_FILE"
+    echo "# Example:" >> "$CONFIG_FILE"
+    echo "# TEMPLATE_OUTPUT_DIRS=\"" >> "$CONFIG_FILE"
+    echo "# meeting 05__Meetings" >> "$CONFIG_FILE"
+    echo "# book 10__Book-Reviews" >> "$CONFIG_FILE"
+    echo "# \"" >> "$CONFIG_FILE"
+    echo "TEMPLATE_OUTPUT_DIRS=\"\"" >> "$CONFIG_FILE"
+fi
+
 # --- 3. Configure Vault Path ---
 echo_bold "Step 2: Configure your Obsidian Vault"
 "$PROJECT_ROOT/scripts/note" -vault

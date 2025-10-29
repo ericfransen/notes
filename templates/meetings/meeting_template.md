@@ -5,7 +5,8 @@ tags: meeting
 attendees:
 ---
 
-Title: <% title %>
+# Title: 
+<% title %>
 
 ## Agenda
 
