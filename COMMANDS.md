@@ -25,6 +25,9 @@
 - `note -daily`
   - Finds or creates the note for the current day in your designated daily notes folder.
 
+- `note -yesterday`
+  - Opens daily note from yesterday, or if not found, the last daily note captured.
+
 - `note -template` -or- shorthand: `note %`
   - Launches a fuzzy search of the template folder for template selection.
 

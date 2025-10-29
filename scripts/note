@@ -181,6 +181,23 @@ case "$COMMAND" in
         "$PROJECT_ROOT/scripts/note-sync" --rename-all
         exit 0
         ;;
+    yesterday)
+        YESTERDAY=$(date -v -1d +'%y-%m-%d')
+        YESTERDAY_NOTE=$(find "$VAULT_PATH/$DAILY_DIR" -name "*$YESTERDAY*.md" -print -quit)
+
+        if [ -n "$YESTERDAY_NOTE" ]; then
+            "$EDITOR_CMD" "$YESTERDAY_NOTE"
+        else
+            LAST_DAILY_NOTE=$(find "$VAULT_PATH/$DAILY_DIR" -name "*.md" -print | sort -r | head -n 1)
+            if [ -n "$LAST_DAILY_NOTE" ]; then
+                echo "No daily note was captured for yesterday, opening last daily note from $(basename "$LAST_DAILY_NOTE" .md)..."
+                "$EDITOR_CMD" "$LAST_DAILY_NOTE"
+            else
+                echo "No daily notes found."
+            fi
+        fi
+        exit 0
+        ;;
 esac
 
 # --- Main Note Creation Logic ---
