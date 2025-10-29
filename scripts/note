@@ -32,8 +32,20 @@ while [[ "$#" -gt 0 ]]; do
       shift
       ;;
     --title)
+      if [ -n "$CUSTOM_TITLE" ]; then
+        echo "Error: Only one title can be provided." >&2
+        exit 1
+      fi
       CUSTOM_TITLE="$2"
       shift; shift
+      ;;
+    _*)
+      if [ -n "$CUSTOM_TITLE" ]; then
+        echo "Error: Only one title can be provided." >&2
+        exit 1
+      fi
+      CUSTOM_TITLE="${1#_}"
+      shift
       ;;
     --*)
       key="${1#--}"
@@ -46,20 +58,20 @@ while [[ "$#" -gt 0 ]]; do
         shift
       fi
       ;;
-    '+'*)
-      KEYWORDS+=("$(echo "${1#\+}" | tr '[:upper:]' '[:lower:]')")
+    +*)
+      KEYWORDS+=("$(echo "${1#+}" | tr '[:upper:]' '[:lower:]')")
       shift
       ;;
-    '@'*)
-      PROCESSED_DIR="${1#\@}"
+    @*)
+      PROCESSED_DIR="${1#@}"
       shift
       ;;
-    %)
+    "%")
       USE_FZF_TEMPLATE=true
       shift
       ;;
-    '%*')
-      TEMPLATE_ALIAS="${1#\%}"
+    %*)
+      TEMPLATE_ALIAS="${1#%}"
       shift
       ;;
     *)

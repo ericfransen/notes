@@ -14,46 +14,10 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 CONFIG_FILE="$PROJECT_ROOT/config.sh"
 LOG_FILE="$PROJECT_ROOT/.sync_log"
 
-# Log the start of the run
-echo "Sync run started at $(date)" > "$LOG_FILE"
+# --- Function Definitions ---
 
-if [ ! -f "$CONFIG_FILE" ]; then exit 0; fi
-source "$CONFIG_FILE"
-if [ -z "$VAULT_PATH" ] || [ ! -d "$VAULT_PATH" ]; then exit 0; fi
-
-# --- Main Sync Logic ---
-cd "$VAULT_PATH" || exit 1
-if [ ! -d ".git" ]; then exit 0; fi
-
-# --- Git Conflict Pre-Check ---
-echo "Performing Git pre-check..."
-git remote update >/dev/null 2>&1 # Efficiently update all remote tracking branches
-
-STATUS=$(git status --porcelain -b)
-
-# Check for active merge conflicts (lines starting with UU)
-if echo "$STATUS" | grep -q "^UU"; then
-    echo "✗ ERROR: Merge conflict detected. Please resolve conflicts in your vault manually and then commit." >> "$LOG_FILE"
-    exit 1
-fi
-
-# Check if the local branch has diverged from the remote
-if echo "$STATUS" | grep -q "ahead.*behind"; then
-    echo "✗ ERROR: Your local branch has diverged from the remote. Please run 'git pull' in your vault to resolve." >> "$LOG_FILE"
-    exit 1
-fi
-
-# Check if the local branch is behind the remote
-if echo "$STATUS" | grep -q "behind"; then
-    echo "✗ ERROR: Your local branch is behind the remote. Please run 'git pull' in your vault to update." >> "$LOG_FILE"
-    exit 1
-fi
-
-echo "✓ Git pre-check passed. No conflicts detected."
-
-# --- Update Untitled Notes Step ---
 update_untitled_notes() {
-    echo "Checking for untitled notes to rename..."
+    echo "Checking for untitled notes to rename..." >> "$LOG_FILE"
     # Create a timestamp for the beginning of the day
     touch -t $(date +"%Y%m%d0000") /tmp/start_of_day
     find . -name "*untitled*.md" -type f -newer /tmp/start_of_day -print0 | while IFS= read -r -d $'\0' file; do
@@ -93,7 +57,7 @@ update_untitled_notes() {
 }
 
 rename_all_untitled_notes() {
-    echo "Checking for all untitled notes to rename..."
+    echo "Checking for all untitled notes to rename..." >> "$LOG_FILE"
     find . -name "*untitled*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
         title=$(grep -m 1 '^title: ' "$file" | sed 's/^title: //')
         if [[ -n "$title" ]] && [[ "$title" != "untitled" ]]; then
@@ -130,19 +94,14 @@ rename_all_untitled_notes() {
     done
 }
 
-if [[ "$1" == "--rename-all" ]]; then
-rename_all_untitled_notes
-
-# --- Archive Processed Notes Step ---
 archive_processed_notes() {
-    echo "Archiving processed notes from the inbox..."
+    echo "Archiving processed notes from the inbox..." >> "$LOG_FILE"
     inbox_path="$VAULT_PATH/00 - Inbox"
     if [ ! -d "$inbox_path" ]; then
         return
     fi
 
-    find "$inbox_path" -name "*.md" -type f -print0 | while IFS= read -r -d 
-\0' file; do
+    find "$inbox_path" -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
         status=$(grep -m 1 '^status: ' "$file" | sed 's/^status: //')
         if [[ "$status" == "processed" ]]; then
             archive_dir="$VAULT_PATH/Archive/$(date +'%Y')/$(date +'%m')"
@@ -151,35 +110,87 @@ archive_processed_notes() {
             mv "$file" "$archive_dir/"
             git add "$archive_dir/$(basename "$file")"
             git rm "$file"
+            echo "✓ Archived '$file' to '$archive_dir'" >> "$LOG_FILE"
         fi
     done
 }
 
-archive_processed_notes
+cleanup_empty_notes() {
+    echo "Cleaning up empty notes..." >> "$LOG_FILE"
+    find . -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
+        body_section=$(sed -n '/## Body/,/---/p' "$file" | sed '1d;$d')
+        trimmed_body=$(echo "$body_section" | tr -d '[:space:]')
+        if [[ -z "$trimmed_body" ]]; then
+            echo "Deleting empty note: $file"
+            git rm "$file"
+            echo "✓ Deleted empty note: $file" >> "$LOG_FILE"
+        fi
+    done
+}
+
+# --- Main Logic ---
+
+# Log the start of the run
+echo "Sync run started at $(date)" > "$LOG_FILE"
+
+if [ ! -f "$CONFIG_FILE" ]; then exit 0; fi
+source "$CONFIG_FILE"
+if [ -z "$VAULT_PATH" ] || [ ! -d "$VAULT_PATH" ]; then exit 0; fi
+
+cd "$VAULT_PATH" || exit 1
+if [ ! -d ".git" ]; then exit 0; fi
+
+# --- Git Conflict Pre-Check ---
+echo "Performing Git pre-check..." >> "$LOG_FILE"
+git remote update >/dev/null 2>&1 # Efficiently update all remote tracking branches
+
+STATUS=$(git status --porcelain -b)
+
+# Check for active merge conflicts (lines starting with UU)
+if echo "$STATUS" | grep -q "^UU"; then
+    echo "✗ ERROR: Merge conflict detected. Please resolve conflicts in your vault manually and then commit." >> "$LOG_FILE"
+    exit 1
+fi
+
+# Check if the local branch has diverged from the remote
+if echo "$STATUS" | grep -q "ahead.*behind"; then
+    echo "✗ ERROR: Your local branch has diverged from the remote. Please run 'git pull' in your vault to resolve." >> "$LOG_FILE"
+    exit 1
+fi
+
+# Check if the local branch is behind the remote
+if echo "$STATUS" | grep -q "behind"; then
+    echo "✗ ERROR: Your local branch is behind the remote. Please run 'git pull' in your vault to update." >> "$LOG_FILE"
+    exit 1
+fi
+
+echo "✓ Git pre-check passed. No conflicts detected." >> "$LOG_FILE"
+
+if [[ "$1" == "--rename-all" ]]; then
+    rename_all_untitled_notes
 else
     update_untitled_notes
 fi
 
-# --- Cleanup Step: Delete empty notes ---
-find . -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
-    body_section=$(sed -n '/## Body/,/---/p' "$file" | sed '1d;$d')
-    trimmed_body=$(echo "$body_section" | tr -d '[:space:]')
-    if [[ -z "$trimmed_body" ]]; then
-        echo "Deleting empty note: $file"
-        git rm "$file"
-    fi
-done
+archive_processed_notes
+cleanup_empty_notes
 
 # --- Git Sync Step ---
 rm -f ./.obsidian/workspace.json ./.obsidian/workspaces.json
+echo "--- Git Status Before Add ---" >> "$LOG_FILE"
+git status --porcelain >> "$LOG_FILE"
 git add .
+echo "--- Git Status After Add ---" >> "$LOG_FILE"
+git status --porcelain >> "$LOG_FILE"
+echo "--- Git Diff Staged ---" >> "$LOG_FILE"
+git diff --staged --name-only >> "$LOG_FILE"
 if ! git diff --staged --quiet; then
-    echo "Changes detected. Committing and pushing..."
+    echo "Changes detected. Committing and pushing..." >> "$LOG_FILE"
     git commit -m "chore: Daily sync $(date +'%Y-%m-%d %H:%M')"
     git push
-    echo "Sync complete."
+    echo "Sync complete." >> "$LOG_FILE"
 else
-    echo "No changes to sync."
+    echo "No changes to sync." >> "$LOG_FILE"
 fi
 
 echo "Sync run finished at $(date)" >> "$LOG_FILE"

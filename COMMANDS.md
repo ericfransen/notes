@@ -31,7 +31,7 @@
 - `--key value`
   - Adds structured data to the note's frontmatter. For example, `note "My idea" --source "https://example.com"` will add `source: "https://example.com"` to the YAML properties.
 
-- `--title "some cool title"`
+- `--title "some cool title"` -or- shorthand: `_some-cool-title`
   - Adds title to the note's filename and frontmatter title section.
 
 ## Utility Commands
