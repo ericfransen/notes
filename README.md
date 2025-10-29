@@ -48,6 +48,7 @@ This system is built on the principle of separating the **tool** (this public re
 
 1.  **(Recommended) GitHub CLI**: For a fully automated setup. Install it from [cli.github.com](https://cli.github.com).
 2.  **(Recommended) VSCode `code` command**: For opening notes in an editor, although you can specify your own editor command in the config file.
+3.  **(Recommended) Obsidian `note -obsidian` command**: For opening notes in Obsidian GUI; you can still use this system without Obsidian: your notes will just be a collection of markdown files stored in you directory of your choosing (git enabled and github backup optionally configurable).
 
 ## Installation
 
@@ -134,10 +135,10 @@ This system provides a single main script, `note`, with several commands and fla
 
    -   The key is the template alias (e.g., "daily") and the value is the output directory relative to VAULT_PATH (e.g., "02__Dailies").
 
-       ```
-       TEMPLATE_OUTPUT_DIRS="daily 02__Dailies
-       meeting 10__Meetings"
-       ```
+      ```
+      TEMPLATE_OUTPUT_DIRS="daily 02__Dailies
+      meeting 10__Meetings"
+      ```
 
 > **Note**: These multi-line string template mappings are the most brittle part of this system, but was chosen because the alternative, an associative array, requires Bash 4.0+, so make sure to follow the above format.
 
