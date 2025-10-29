@@ -3,7 +3,7 @@
 ## Main Commands
 
 - `note`
-  - Launches the code editor for a new note (markdown file) in your default inbox (00 - Inbox).
+  - Launches the code editor for a new note (markdown file) in your default inbox (00__Inbox).
 
 - `note "Some text"`
   - Creates an "atomic note" instantly. The text is the body of the note. No editor is launched.

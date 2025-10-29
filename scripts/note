@@ -213,7 +213,7 @@ if [[ -n "$PROCESSED_DIR" ]]; then
     SUBDIR="$PROCESSED_DIR"
     STATUS="processed"
 else
-    SUBDIR="00 - Inbox"
+    SUBDIR="00__Inbox"
     STATUS="inbox"
 fi
 

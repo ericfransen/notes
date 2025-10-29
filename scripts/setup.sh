@@ -59,7 +59,7 @@ echo_green "✓ Vault path is configured."
 # --- 3. Configure Daily Notes Directory ---
 # Only ask if DAILY_DIR is not already set
 if [ -z "$DAILY_DIR" ]; then
-    read -p "Enter path for your daily notes directory (e.g., 10 - Dailies): " daily_dir
+    read -p "Enter path for your daily notes directory (e.g., 02__Dailies): " daily_dir
     echo "DAILY_DIR=\"$daily_dir\"" >> "$CONFIG_FILE"
 fi
 

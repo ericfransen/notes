@@ -96,7 +96,7 @@ rename_all_untitled_notes() {
 
 archive_processed_notes() {
     echo "Archiving processed notes from the inbox..." >> "$LOG_FILE"
-    inbox_path="$VAULT_PATH/00 - Inbox"
+    inbox_path="$VAULT_PATH/00__Inbox"
     if [ ! -d "$inbox_path" ]; then
         return
     fi
@@ -104,7 +104,7 @@ archive_processed_notes() {
     find "$inbox_path" -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
         status=$(grep -m 1 '^status: ' "$file" | sed 's/^status: //')
         if [[ "$status" == "processed" ]]; then
-            archive_dir="$VAULT_PATH/Archive/$(date +'%Y')/$(date +'%m')"
+            archive_dir="$VAULT_PATH/01__Archive/$(date +'%Y')/$(date +'%m')"
             mkdir -p "$archive_dir"
             echo "Archiving '$file' to '$archive_dir'"
             mv "$file" "$archive_dir/"
