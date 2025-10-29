@@ -1,9 +1,11 @@
 ---
+date: <% timestamp %>
+day: <% day %>
 tags: meeting
 attendees:
 ---
 
-# <% title %>
+Title: <% title %>
 
 ## Agenda
 

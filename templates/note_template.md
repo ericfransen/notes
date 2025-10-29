@@ -1,5 +1,6 @@
 ---
 date: <% timestamp %>
+day: <% day %>
 title: <% title %>
 keywords: <% keywords %>
 status: <% status %>

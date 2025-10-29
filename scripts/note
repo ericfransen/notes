@@ -11,6 +11,10 @@ SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 PROJECT_ROOT="$SCRIPT_DIR/.."
 CONFIG_FILE="$PROJECT_ROOT/config.sh"
 
+# --- Source Config ---
+if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
+source "$CONFIG_FILE"
+
 # --- Argument Parsing ---
 OPEN_IN_VAULT="false"
 KEYWORDS=()
@@ -84,16 +88,132 @@ done
 # The first non-flag argument is the note string for atomic notes
 NOTE_STRING="${OTHER_ARGS[0]}"
 # The first utility command (e.g., -vault, -debug) is also captured here
-COMMAND="${OTHER_ARGS[0]}"
+COMMAND="" # Initialize COMMAND here
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -v)
+      OPEN_IN_VAULT="true"
+      shift
+      ;;
+    -template)
+      USE_FZF_TEMPLATE=true
+      shift
+      ;;
+    --title)
+      if [ -n "$CUSTOM_TITLE" ]; then
+        echo "Error: Only one title can be provided." >&2
+        exit 1
+      fi
+      CUSTOM_TITLE="$2"
+      shift; shift
+      ;;
+    _*)
+      if [ -n "$CUSTOM_TITLE" ]; then
+        echo "Error: Only one title can be provided." >&2
+        exit 1
+      fi
+      CUSTOM_TITLE="${1#_}"
+      shift
+      ;;
+    --*)
+      key="${1#--}"
+      if [[ -n "$2" ]] && [[ "$2" != --* ]] && [[ "$2" != '@'* ]] && [[ "$2" != '+'* ]]; then
+        value="$2"
+        METADATA_YAML+="${key}: \"${value}\"\n"
+        shift; shift
+      else
+        METADATA_YAML+="${key}: true\n"
+        shift
+      fi
+      ;;
+    +*)
+      KEYWORDS+=("$(echo "${1#+}" | tr '[:upper:]' '[:lower:]')")
+      shift
+      ;;
+    @*)
+      PROCESSED_DIR="${1#@}"
+      shift
+      ;;
+    "%")
+      USE_FZF_TEMPLATE=true
+      shift
+      ;;
+    %*)
+      TEMPLATE_ALIAS="${1#%}"
+      shift
+      ;;
+    -daily|-vault|-debug|-git-setup|-sync-status|-code|-obsidian|-rename-all-untitled|-yesterday|-cmd)
+      COMMAND="${1#-}" # Set COMMAND directly for known commands
+      shift
+      ;;
+    *)
+      OTHER_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# If COMMAND was not set by a specific flag, and there are other args, and the first other arg starts with '-', it's a command.
+if [ -z "$COMMAND" ] && [[ "${OTHER_ARGS[0]}" == -* ]]; then
+    COMMAND="${OTHER_ARGS[0]#-}"
+    # Remove the command from OTHER_ARGS so it's not treated as NOTE_STRING
+    OTHER_ARGS=("${OTHER_ARGS[@]:1}")
+fi
+
+# The first non-flag argument that is not a command is the note string for atomic notes
+NOTE_STRING="${OTHER_ARGS[0]}"
 
 # --- For all other commands, source the config ---
-if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
-source "$CONFIG_FILE"
+# This line is redundant and should be removed as config is sourced at the beginning.
+# if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
+# source "$CONFIG_FILE"
 
 # --- Command Routing ---
 # Allow for commands with a leading hyphen
-if [[ "$COMMAND" == -* ]]; then
-    COMMAND="${COMMAND#-}"
+# This is now handled in the argument parsing, so this block is redundant.
+# if [[ "$COMMAND" == -* ]]; then
+#     COMMAND="${COMMAND#-}"
+# fi
+
+# --- Template Selection Logic ---
+# Default to the standard note template
+TEMPLATE_PATH="$PROJECT_ROOT/$NOTE_TEMPLATE_PATH"
+
+if [ "$USE_FZF_TEMPLATE" = true ] || [ "$COMMAND" == "daily" ] || [ -n "$TEMPLATE_ALIAS" ]; then
+    if [ "$COMMAND" == "daily" ]; then
+        TEMPLATE_ALIAS="daily"
+    fi
+
+    if [ -n "$TEMPLATE_ALIAS" ]; then
+        echo "Searching for [$TEMPLATE_ALIAS] template..."
+        while read -r alias path; do
+        echo "DEBUG: Parsing template mapping - alias: '$alias', path: '$path'"
+        if [ -n "$alias" ] && [ "$alias" == "$TEMPLATE_ALIAS" ]; then
+                TEMPLATE_PATH="$PROJECT_ROOT/$path"
+                break
+            fi
+        done <<< "$TEMPLATE_MAPPINGS"
+    fi
+
+    if [ ! -f "$TEMPLATE_PATH" ]; then
+        if [ -n "$TEMPLATE_ALIAS" ]; then
+            echo "Warning: Template alias '%$TEMPLATE_ALIAS' not found in config.sh." >&2
+        fi
+        if ! command -v fzf &> /dev/null; then
+            echo "fzf is not installed. Please install it to use the template selection feature." >&2
+            echo "See: https://github.com/junegunn/fzf#installation" >&2
+            exit 1
+        fi
+        SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | sed "s|$PROJECT_ROOT/templates/||" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
+        if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
+            TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
+        else
+            echo "No template selected. Aborting." >&2
+            exit 1
+        fi
+    fi
+    echo "Using [$(basename "$TEMPLATE_PATH" .md)] template from _notes/$(echo "$TEMPLATE_PATH" | sed "s|$PROJECT_ROOT/||")"
 fi
 
 if [[ "$COMMAND" == "cmd" ]]; then
@@ -130,6 +250,24 @@ fi
 
 # --- Handle all other utility commands ---
 case "$COMMAND" in
+    daily)
+        TODAY_DATE=$(date +'%y-%m-%d')
+        # Search for any daily note for today, regardless of the title part
+        EXISTING_DAILY_NOTE=$(find "${VAULT_PATH}/${DAILY_DIR}" -name "${TODAY_DATE}_*.md" -print -quit)
+
+        if [ -n "$EXISTING_DAILY_NOTE" ]; then
+            echo "Found existing daily note for today: $EXISTING_DAILY_NOTE"
+            echo "Opening for editing..."
+            # Use the same opening logic as the main note creation
+            if [[ "$OPEN_IN_VAULT" == "true" ]]; then
+                "$EDITOR_CMD" "$VAULT_PATH" --goto "$EXISTING_DAILY_NOTE":1
+            else
+                "$EDITOR_CMD" -g "$EXISTING_DAILY_NOTE":1
+            fi
+            exit 0
+        fi
+        # If no existing note, fall through to create a new one
+        ;;
     debug)
         set -x
         ;;
@@ -152,29 +290,6 @@ case "$COMMAND" in
         ;;
     obsidian)
         open "obsidian://vault/${VAULT_NAME}"
-        exit 0
-        ;;
-    daily)
-        DAILY_NOTE_PATH="$PROJECT_ROOT/$DAILY_NOTE_TEMPLATE_PATH"
-        if [ ! -f "$DAILY_NOTE_PATH" ]; then
-            echo "Daily note template not found at '$DAILY_NOTE_PATH'" >&2
-            exit 1
-        fi
-        # Create a title like "2023-10-27_Friday"
-        # YYYY-MM-DD_Day
-        DAILY_TITLE="$(date +'%Y-%m-%d_%A')"
-        FILENAME="${FILE_TIMESTAMP}_daily.md"
-        FILEPATH="${VAULT_PATH}/${DAILY_NOTES_SUBDIR}/${FILENAME}"
-        mkdir -p "${VAULT_PATH}/${DAILY_NOTES_SUBDIR}"
-        
-        CONTENT=$(cat "$DAILY_NOTE_PATH" | awk -v ts="$(date +'%Y-%m-%d %H:%M:%S')" -v ti="$DAILY_TITLE" '{
-            gsub(/<% timestamp %>/, ts);
-            gsub(/<% title %>/, ti);
-            print;
-        }')
-        echo "$CONTENT" > "$FILEPATH"
-        echo "Note created: $FILEPATH"
-        "$EDITOR_CMD" -g "$FILEPATH":10
         exit 0
         ;;
     rename-all-untitled)
@@ -209,7 +324,21 @@ if [[ -n "$NOTE_STRING" ]]; then
     MODE="atomic"
 fi
 
-if [[ -n "$PROCESSED_DIR" ]]; then
+# Determine the subdirectory for the note
+SUBDIR_FROM_TEMPLATE=""
+if [ -n "$TEMPLATE_ALIAS" ]; then
+    while read -r alias output_dir; do
+        if [ -n "$alias" ] && [ "$alias" == "$TEMPLATE_ALIAS" ]; then
+            SUBDIR_FROM_TEMPLATE="$output_dir"
+            break
+        fi
+    done <<< "$TEMPLATE_OUTPUT_DIRS"
+fi
+
+if [ -n "$SUBDIR_FROM_TEMPLATE" ]; then
+    SUBDIR="$SUBDIR_FROM_TEMPLATE"
+    STATUS="templated" # New status for notes from templates with custom output dirs
+elif [[ -n "$PROCESSED_DIR" ]]; then
     SUBDIR="$PROCESSED_DIR"
     STATUS="processed"
 else
@@ -220,13 +349,18 @@ fi
 to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d_%H-%M')
+DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
+echo "DEBUG: DAY_OF_WEEK is $DAY_OF_WEEK"
 TITLE=""; BODY=""; KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
-if [ "$MODE" == "atomic" ]; then
+if [ "$COMMAND" == "daily" ]; then
+    TITLE="daily"
+elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then # Set title for meeting notes
+    TITLE="meeting"
     TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
     BODY="$NOTE_STRING"
 else
-    TITLE="untitled"
+    TITLE="untitled" # <--- This is the culprit
     BODY=""
 fi
 
@@ -234,7 +368,24 @@ if [[ -n "$CUSTOM_TITLE" ]]; then
     TITLE="$CUSTOM_TITLE"
 fi
 
-KEBAB_TITLE=$(to_kebab_case "$TITLE"); FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
+KEBAB_TITLE=$(to_kebab_case "$TITLE")
+FILENAME_PART=""
+
+if [ "$COMMAND" == "daily" ]; then
+    FILENAME_PART="daily"
+elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then
+    FILENAME_PART="mtg"
+fi
+
+if [ -n "$FILENAME_PART" ]; then
+    if [ -n "$KEBAB_TITLE" ] && [ "$KEBAB_TITLE" != "$FILENAME_PART" ]; then
+        FILENAME="${FILE_TIMESTAMP}_${FILENAME_PART}-${KEBAB_TITLE}.md"
+    else
+        FILENAME="${FILE_TIMESTAMP}_${FILENAME_PART}.md"
+    fi
+else
+    FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
+fi
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 
 # --- Template Selection Logic ---
@@ -290,15 +441,19 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
     # echo "body: $BODY"
     # echo "meta: $METADATA_YAML"
     # echo "status: $STATUS"
-    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" -v status="$STATUS" '{
-        gsub(/<% timestamp %>/, ts);
-        gsub(/<% title %>/, ti);
-        gsub(/<% keywords %>/, kw);
-        gsub(/<% body %>/, bd);
-        gsub(/<% metadata %>/, meta);
-        gsub(/<% status %>/, status);
-        print;
-    }')
+    CONTENT_COMMAND="cat \"$TEMPLATE_PATH\" | awk -v ts=\"$TIMESTAMP\" -v ti=\"$TITLE\" -v kw=\"$KEYWORDS_STRING\" -v bd=\"$BODY\" -v meta=\"$METADATA_YAML\" -v status=\"$STATUS\" -v day=\"$DAY_OF_WEEK\" '{\
+        gsub(/<% timestamp %>/, ts);\
+        gsub(/<% title %>/, ti);\
+        gsub(/<% keywords %>/, kw);\
+        gsub(/<% body %>/, bd);\
+        gsub(/<% metadata %>/, meta);\
+        gsub(/<% status %>/, status);\
+        gsub(/<% day %>/, day);\
+        print;\
+    }'"
+    echo "DEBUG: AWK Command: $CONTENT_COMMAND" # Debug echo
+    CONTENT=$(eval "$CONTENT_COMMAND") # Execute the command
+    echo "DEBUG: Generated Content:\n$CONTENT" # Debug echo
     echo "$CONTENT" > "$FILEPATH"
 fi
 
@@ -306,13 +461,15 @@ body_line_number=$(echo "$CONTENT" | grep -n "## Body" | cut -d: -f1)
 cursor_line_number=$((body_line_number + 1))
 
 echo "Note created: $FILEPATH"
+echo "DEBUG: MODE is $MODE"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."
     if [[ "$OPEN_IN_VAULT" == "true" ]]; then 
         # echo "Executing: $EDITOR_CMD $VAULT_PATH --goto $FILEPATH:$cursor_line_number"
+        echo "DEBUG: Executing command: \"$EDITOR_CMD\" \"$VAULT_PATH\" --goto \"$FILEPATH\":$cursor_line_number"
         "$EDITOR_CMD" "$VAULT_PATH" --goto "$FILEPATH":$cursor_line_number; 
     else 
-        echo "Executing: $EDITOR_CMD -g $FILEPATH:$cursor_line_number"
+        echo "DEBUG: Executing command: \"$EDITOR_CMD\" -g \"$FILEPATH\":$cursor_line_number"
         "$EDITOR_CMD" -g "$FILEPATH":$cursor_line_number; 
     fi
 fi
