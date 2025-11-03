@@ -13,8 +13,10 @@ extract_title_from_note() {
 
     # Check if these first 7 words contain a colon
     if [[ "$first_seven_words" == *":"* ]]; then
-        # If yes, the title is the first 5 words of the original string
-        echo "$note_string" | cut -d' ' -f1-5
+        # Extract the part before the colon from these 7 words
+        local text_before_colon_in_seven_words="${first_seven_words%%:*}"
+        # Then take the first 5 words of that extracted part
+        echo "$text_before_colon_in_seven_words" | cut -d' ' -f1-5
     else
         # If no colon in the first 7 words, return empty
         echo ""
