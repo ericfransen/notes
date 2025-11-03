@@ -6,6 +6,12 @@ debug_log() {
     fi
 }
 
+extract_title_from_note() {
+    local note_string="$1"
+    # Extract the first non-empty line as the title
+    echo "$note_string" | awk 'NF {print; exit}'
+}
+
 # --- Find Project Root ---
 SOURCE=${BASH_SOURCE[0]}
 while [ -L "$SOURCE" ]; do
@@ -366,10 +372,11 @@ to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d_%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
+DAY_ABBREVIATION=$(date +'%a' | tr '[:lower:]' '[:upper:]') # Get 3-letter day abbreviation
 TITLE=""; BODY=""; KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
 if [ "$COMMAND" == "daily" ]; then
-    TITLE="daily"
+    TITLE="${DAY_ABBREVIATION}_daily"
 elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then # Set title for meeting notes
     TITLE="meeting"
     TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
@@ -381,25 +388,38 @@ fi
 
 if [[ -n "$CUSTOM_TITLE" ]]; then
     TITLE="$CUSTOM_TITLE"
+elif [[ -n "$NOTE_STRING" ]]; then
+    # If no custom title, try to extract from note string
+    EXTRACTED_TITLE=$(extract_title_from_note "$NOTE_STRING")
+    if [[ -n "$EXTRACTED_TITLE" ]]; then
+        TITLE="$EXTRACTED_TITLE"
+        # The rest of the string becomes the body
+        BODY="${NOTE_STRING#*: }"
+    else
+        TITLE="untitled"
+        BODY="$NOTE_STRING"
+    fi
 fi
 
 KEBAB_TITLE=$(to_kebab_case "$TITLE")
 FILENAME_PART=""
 
 if [ "$COMMAND" == "daily" ]; then
-    FILENAME_PART="daily"
+    FILENAME_PART="${DAY_ABBREVIATION}_daily"
 elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then
     FILENAME_PART="mtg"
 fi
 
 if [ -n "$FILENAME_PART" ]; then
-    if [ -n "$KEBAB_TITLE" ] && [ "$KEBAB_TITLE" != "$FILENAME_PART" ]; then
-        FILENAME="${FILE_TIMESTAMP}_${FILENAME_PART}-${KEBAB_TITLE}.md"
+    if [ "$COMMAND" == "daily" ]; then
+        FILENAME="${FILE_TIMESTAMP}__${FILENAME_PART}.md"
+    elif [ -n "$KEBAB_TITLE" ] && [ "$KEBAB_TITLE" != "$(to_kebab_case "$FILENAME_PART")" ]; then
+        FILENAME="${FILE_TIMESTAMP}__${FILENAME_PART}-${KEBAB_TITLE}.md"
     else
-        FILENAME="${FILE_TIMESTAMP}_${FILENAME_PART}.md"
+        FILENAME="${FILE_TIMESTAMP}__${FILENAME_PART}.md"
     fi
 else
-    FILENAME="${FILE_TIMESTAMP}_${KEBAB_TITLE}.md"
+    FILENAME="${FILE_TIMESTAMP}__${KEBAB_TITLE}.md"
 fi
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 
@@ -456,11 +476,12 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
     # echo "body: $BODY"
     # echo "meta: $METADATA_YAML"
     # echo "status: $STATUS"
-    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v bd="$BODY" -v meta="$METADATA_YAML" -v status="$STATUS" -v day="$DAY_OF_WEEK" -v folder="$SUBDIR" '{
+    export BODY
+    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v meta="$METADATA_YAML" -v status="$STATUS" -v day="$DAY_OF_WEEK" -v folder="$SUBDIR" '{
         gsub(/<% timestamp %>/, ts);
         gsub(/<% title %>/, ti);
         gsub(/<% keywords %>/, kw);
-        gsub(/<% body %>/, bd);
+        gsub(/<% body %>/, ENVIRON["BODY"]);
         gsub(/<% metadata %>/, meta);
         gsub(/<% status %>/, status);
         gsub(/<% day %>/, day);
