@@ -8,8 +8,15 @@ debug_log() {
 
 extract_title_from_note() {
     local note_string="$1"
-    # Extract the first non-empty line as the title
-    echo "$note_string" | awk 'NF {print; exit}'
+    if [[ "$note_string" == *":"* ]]; then
+        # Extract text before the first colon
+        local text_before_colon="${note_string%%:*}"
+        # Take the first 5 words
+        echo "$text_before_colon" | cut -d' ' -f1-5
+    else
+        # If no colon, return empty so the main logic can use a default
+        echo ""
+    fi
 }
 
 # --- Find Project Root ---
@@ -370,7 +377,7 @@ fi
 
 to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
 
-TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d_%H-%M')
+TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d__%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
 DAY_ABBREVIATION=$(date +'%a' | tr '[:lower:]' '[:upper:]') # Get 3-letter day abbreviation
 TITLE=""; BODY=""; KEYWORDS_STRING=""
