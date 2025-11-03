@@ -16,10 +16,10 @@ It decouples the essential task of capturing new knowledge from the context of t
 
 - Features (CLI Value Proposition)
     - Zero-Latency Capture
-        - Capture a complete, structured thought with a single command without leaving your console or IDE. Eliminates context switching. Your thought is saved instantly, maintaining flow state (adhering to Zettelkasten's fleeting note principle).
+        - Capture a complete, structured thought with a single command in your terminal. Eliminates context switching. Your thought is saved instantly, maintaining flow state (adhering to Zettelkasten's fleeting note principle).
     - Structured In-Capture
-        - Automatically applies the required YY-MM-DD_HH-MM timestamp, YAML Frontmatter (Properties), and the status: inbox flag.
-        - Forces consistency at the source. Your note is pre-formatted for later Dataview queries.
+        - Automatically applies the required YY-MM-DD__HH-MM__ timestamp, YAML Frontmatter (Properties), and the status: inbox flag.
+        - Forces consistency at the source. Your note is pre-formatted for later dataview queries.
     - Intelligent Routing
         - Use simple flags (note "bug fix" @project-a) to automatically create the correct subdirectory and populate the keywords property.
         - Automated triage: new notes are filed into their review category immediately (automating 1st step of the PARA workflow (Projects, Areas, Resources, Archives)).
@@ -29,7 +29,7 @@ It decouples the essential task of capturing new knowledge from the context of t
         - Separates the capture utility from the scheduled, nightly Git backup and note processing job.
         - Failures in one stage (capture or sync) do not affect the other.
 
-- Enhanced Workflow: Combining Note CLI Tool & Obsidian Git Plugin
+- (OPTIONAL) Enhanced Workflow: Combining Note CLI Tool & Obsidian Git Plugin
     - While the CLI excels at initial capture, it is inferior for interactive synchronization and managing configuration state.
     - By coupling the two, the CLI handles the rapid capture and initial structure, while the plugin handles the advanced, event-driven synchronization needed for real-time collaboration or multi-device operation and settings.
 
@@ -48,7 +48,7 @@ This system is built on the principle of separating the **tool** (this public re
 
 1.  **(Recommended) GitHub CLI**: For a fully automated setup. Install it from [cli.github.com](https://cli.github.com).
 2.  **(Recommended) VSCode `code` command**: For opening notes in an editor, although you can specify your own editor command in the config file.
-3.  **(Recommended) Obsidian `note -obsidian` command**: For opening notes in Obsidian GUI; you can still use this system without Obsidian: your notes will just be a collection of markdown files stored in you directory of your choosing (git enabled and github backup optionally configurable).
+3.  **(Recommended) Obsidian `note -obsidian` command**: For opening notes in Obsidian GUI; you can still use this system without Obsidian: your notes will just be a collection of markdown files stored in the directory of your choosing (git enabled and github backup optionally configurable).
 
 ## Installation
 
@@ -56,7 +56,7 @@ This system is built on the principle of separating the **tool** (this public re
 
 2.  Navigate into the project directory:
     ```sh
-    cd /path/to/note-system
+    cd /path/to/notes
     ```
 
 3.  Make the setup script executable:
@@ -82,7 +82,7 @@ This system is built on the principle of separating the **tool** (this public re
 
    **Create an Atomic Note**: `note "My atomic note" +idea`
 
-    -   Tip: use `\n` or other markdown in your atomic note for nicely formatted notes to process later.
+    -   Tip: use `\n` or other markdown in your atomic note for nicely formatted notes for later processing.
 
    **Create a Daily Note**: `note -daily` (can also be combined with `-v`)
 
@@ -96,9 +96,9 @@ This system is built on the principle of separating the **tool** (this public re
 
  **Utility Commands**:
 
-   **Open Note in Vault in VSCode**: `note -code`
+   **Open Note in Vault in VSCode/Editor of Choice**: `note -code`
 
-   **Open Note in Vault in Obsidian**: `note -obsidian`
+   **Open Note in Obsidian**: `note -obsidian`
 
    **Reconfigure Vault**: `note -vault`
 
@@ -138,15 +138,16 @@ This system provides a single main script, `note`, with several commands and fla
        meeting 10__Meetings"
        ```
 
-> **Note**: These multi-line string template mappings are the most brittle part of this system, but was chosen because the alternative, an associative array, requires Bash 4.0+, so make sure to follow the above format.
+> **Note**: These multi-line string template mappings are the most brittle part of this system, but were chosen because the alternative, an associative array, requires Bash 4.0+; make sure to follow the above format.
 
 ## Nightly Cron Job (Optional)
 
     - You are able to set up a backup to GitHub of your notes vault as part of initial `setup` script
 
-    - Every time the nightly sync job runs, before it commits any changes, it will first search for and delete any "blank" notes. A note is considered blank if it meets both of these conditions:
-        - 1. Its title is still the default untitled.
-        - 2. Its body section is completely empty.
+    - Every time the nightly sync job runs, before it commits any changes, it will first search for and delete any "blank" notes. 
+    - A note is considered blank if it meets both of these conditions:
+        - 1. Its title is still the default `untitled`.
+        - 2. Its body section is completely empty (including whitespace).
 
     - You will need to set up a Personal Access Token (PAT) for scheduled notes backup
         - Go to your GitHub Settings → Developer settings → Personal access tokens → Tokens (classic).
@@ -158,7 +159,8 @@ This system provides a single main script, `note`, with several commands and fla
 
         - When prompted by `gh auth login`, choose Paste the authentication token.
 
-        - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
+        - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). 
+        - When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
 
 ## Setting Up on a New Computer
 
@@ -168,13 +170,13 @@ This system is designed to work with an existing notes vault that is already tra
 
     `git clone <your-private-notes-repo-url> ~/notes-vault`
 
-2.  **Clone the Tool**: Next, clone this `note-system` repository somewhere else:
+2.  **Clone the Tool**: Next, clone this `notes` repository somewhere else:
 
-    `git clone <this-tool-repo-url> ~/note-system`
+    `git clone <this-tool-repo-url> ~/notes`
 
-3.  **Run Setup**: Navigate into the `note-system` directory and run the setup script:
+3.  **Run Setup**: Navigate into the `notes` directory and run the setup script:
 
-    `cd ~/note-system && bash scripts/setup.sh`
+    `cd ~/notes && bash scripts/setup.sh`
 
 4.  **Select Your Vault**: When prompted, choose the option to manually enter the path to your vault and provide the location where you cloned it (e.g., `~/notes-vault`).
 
