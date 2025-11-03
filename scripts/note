@@ -115,8 +115,6 @@ if [ "$DEBUG_MODE" = "true" ]; then
     set -x
 fi
 
-# The first non-flag argument is the note string for atomic notes
-NOTE_STRING="${OTHER_ARGS[0]}"
 # The first utility command (e.g., -vault, -debug) is also captured here
 COMMAND="" # Initialize COMMAND here
 
@@ -485,7 +483,7 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touc
     # echo "body: $BODY"
     # echo "meta: $METADATA_YAML"
     # echo "status: $STATUS"
-    export BODY
+    export BODY=$(printf "%b" "$BODY")
     CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v meta="$METADATA_YAML" -v status="$STATUS" -v day="$DAY_OF_WEEK" -v folder="$SUBDIR" '{
         gsub(/<% timestamp %>/, ts);
         gsub(/<% title %>/, ti);
