@@ -5,7 +5,8 @@ config.sh
 .sync_log
 
 # Feature list documentation.
-feature_list.md
+# feature_list.md
+_features
 
 # put your personal templates here:
 templates/_personal/*

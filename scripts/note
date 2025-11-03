@@ -8,13 +8,15 @@ debug_log() {
 
 extract_title_from_note() {
     local note_string="$1"
-    if [[ "$note_string" == *":"* ]]; then
-        # Extract text before the first colon
-        local text_before_colon="${note_string%%:*}"
-        # Take the first 5 words
-        echo "$text_before_colon" | cut -d' ' -f1-5
+    # Get the first 7 words of the note string
+    local first_seven_words=$(echo "$note_string" | cut -d' ' -f1-7)
+
+    # Check if these first 7 words contain a colon
+    if [[ "$first_seven_words" == *":"* ]]; then
+        # If yes, the title is the first 5 words of the original string
+        echo "$note_string" | cut -d' ' -f1-5
     else
-        # If no colon, return empty so the main logic can use a default
+        # If no colon in the first 7 words, return empty
         echo ""
     fi
 }
