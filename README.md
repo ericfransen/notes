@@ -112,7 +112,7 @@ This system provides a single main script, `note`, with several commands and fla
 
    -   The config file contains:
 
- **EDITOR_CMD**:  `Command you use for your editor of choice`
+ **EDITOR_CMD**: `Command you use for your editor of choice`
 
  **NOTE_TEMPLATE_PATH**: `Default note template`
 

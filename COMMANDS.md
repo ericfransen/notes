@@ -17,6 +17,9 @@
 
 - `note %some-template`
   - Creates a new note in the editor, with the template mapped in the config file to `some-template`.
+  - `note -template` -or- shorthand: `note %`
+    - Launches a fuzzy search of the template folder for template selection.
+
 
 ## Flags & Options
 
@@ -27,10 +30,7 @@
   - Finds or creates the note for the current day in your designated daily notes folder.
 
 - `note -yesterday`
-  - Opens daily note from yesterday, or if not found, the last daily note captured.
-
-- `note -template` -or- shorthand: `note %`
-  - Launches a fuzzy search of the template folder for template selection.
+  - Opens daily note from yesterday, or if not found, open the last daily note captured.
 
 - `--key value`
   - Adds structured data to the note's frontmatter. For example, `note "My idea" --source "https://example.com"` will add `source: "https://example.com"` to the YAML properties.

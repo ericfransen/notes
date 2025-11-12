@@ -48,7 +48,14 @@ CUSTOM_TITLE=""
 PROCESSED_DIR=""
 USE_FZF_TEMPLATE=false
 TEMPLATE_ALIAS=""
+OPEN_IN_VIM="false"
 
+if [ "$DEBUG_MODE" = "true" ]; then
+    set -x
+fi
+
+# The first utility command (e.g., -vault, -debug) is also captured here
+COMMAND="" # Initialize COMMAND here
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -debug)
@@ -59,71 +66,8 @@ while [[ "$#" -gt 0 ]]; do
       OPEN_IN_VAULT="true"
       shift
       ;;
-    -template)
-      USE_FZF_TEMPLATE=true
-      shift
-      ;;
-    --title)
-      if [ -n "$CUSTOM_TITLE" ]; then
-        echo "Error: Only one title can be provided." >&2
-        exit 1
-      fi
-      CUSTOM_TITLE="$2"
-      shift; shift
-      ;;
-    _*)
-      if [ -n "$CUSTOM_TITLE" ]; then
-        echo "Error: Only one title can be provided." >&2
-        exit 1
-      fi
-      CUSTOM_TITLE="${1#_}"
-      shift
-      ;;
-    --*)
-      key="${1#--}"
-      if [[ -n "$2" ]] && [[ "$2" != --* ]] && [[ "$2" != '@'* ]] && [[ "$2" != '+'* ]]; then
-        value="$2"
-        METADATA_YAML+="${key}: \"${value}\"\n"
-        shift; shift
-      else
-        METADATA_YAML+="${key}: true\n"
-        shift
-      fi
-      ;;
-    +*)
-      KEYWORDS+=("$(echo "${1#+}" | tr '[:upper:]' '[:lower:]')")
-      shift
-      ;;
-    @*)
-      PROCESSED_DIR="${1#@}"
-      shift
-      ;;
-    "%")
-      USE_FZF_TEMPLATE=true
-      shift
-      ;;
-    %*)
-      TEMPLATE_ALIAS="${1#%}"
-      shift
-      ;;
-    *)
-      OTHER_ARGS+=("$1")
-      shift
-      ;;
-  esac
-done
-
-if [ "$DEBUG_MODE" = "true" ]; then
-    set -x
-fi
-
-# The first utility command (e.g., -vault, -debug) is also captured here
-COMMAND="" # Initialize COMMAND here
-
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    -v)
-      OPEN_IN_VAULT="true"
+    -vi|-vim)
+      OPEN_IN_VIM="true"
       shift
       ;;
     -template)
@@ -185,7 +129,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # If COMMAND was not set by a specific flag, and there are other args, and the first other arg starts with '-', it's a command.
-if [ -z "$COMMAND" ] && [[ "${OTHER_ARGS[0]}" == -* ]]; then
+if [ -z "$COMMAND" ] && [ ${#OTHER_ARGS[@]} -gt 0 ] && [[ "${OTHER_ARGS[0]}" == -* ]]; then
     COMMAND="${OTHER_ARGS[0]#-}"
     # Remove the command from OTHER_ARGS so it's not treated as NOTE_STRING
     OTHER_ARGS=("${OTHER_ARGS[@]:1}")
@@ -432,52 +376,6 @@ else
 fi
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 
-# --- Template Selection Logic ---
-# Default to the standard note template
-TEMPLATE_PATH="$PROJECT_ROOT/$NOTE_TEMPLATE_PATH"
-
-# If -template is used, launch fzf
-if [ "$USE_FZF_TEMPLATE" = true ]; then
-    if ! command -v fzf &> /dev/null; then
-        echo "fzf is not installed. Please install it to use the template selection feature." >&2
-        echo "See: https://github.com/junegunn/fzf#installation" >&2
-        exit 1
-    fi
-    SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | sed "s|$PROJECT_ROOT/templates/||" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
-    if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
-        TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
-    else
-        echo "No template selected. Aborting." >&2
-        exit 1
-    fi
-fi
-
-# If %template-alias is used, look it up in the config
-if [ -n "$TEMPLATE_ALIAS" ]; then
-    while read -r alias path; do
-        if [ -n "$alias" ] && [ "$alias" == "$TEMPLATE_ALIAS" ]; then
-            TEMPLATE_PATH="$PROJECT_ROOT/$path"
-            break
-        fi
-    done <<< "$TEMPLATE_MAPPINGS"
-
-    if [ ! -f "$TEMPLATE_PATH" ]; then
-        echo "Warning: Template alias '%$TEMPLATE_ALIAS' not found in config.sh." >&2
-        if ! command -v fzf &> /dev/null; then
-            echo "fzf is not installed. Please install it to use the template selection feature." >&2
-            echo "See: https://github.com/junegunn/fzf#installation" >&2
-            exit 1
-        fi
-        SELECTED_TEMPLATE_NAME=$(find "$PROJECT_ROOT/templates" -type f -name "*.md" | sed "s|$PROJECT_ROOT/templates/||" | fzf --prompt="Select a template: " --height=20 --border --color=dark)
-        if [ -n "$SELECTED_TEMPLATE_NAME" ]; then
-            TEMPLATE_PATH="$PROJECT_ROOT/templates/$SELECTED_TEMPLATE_NAME"
-        else
-            echo "No template selected. Aborting." >&2
-            exit 1
-        fi
-    fi
-fi
-
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
     # echo "timestamp: $TIMESTAMP"
     # echo "title: $TITLE"
@@ -504,6 +402,12 @@ body_line_number=$(echo "$CONTENT" | grep -n "## Body" | cut -d: -f1)
 cursor_line_number=$((body_line_number + 1))
 
 echo "Note created: $FILEPATH"
+
+if [ "$OPEN_IN_VIM" = "true" ]; then
+    vim "$FILEPATH"
+    exit 0
+fi
+
 debug_log "MODE is $MODE"
 if [ "$MODE" == "editor" ]; then
     echo "Opening for editing..."

@@ -116,8 +116,12 @@ archive_processed_notes() {
 }
 
 cleanup_empty_notes() {
-    echo "Cleaning up empty notes..." >> "$LOG_FILE"
-    find . -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
+    echo "Cleaning up empty notes in inbox..." >> "$LOG_FILE"
+    inbox_path="$VAULT_PATH/00__Inbox"
+    if [ ! -d "$inbox_path" ]; then
+        return
+    fi
+    find "$inbox_path" -name "*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
         body_section=$(sed -n '/## Body/,/---/p' "$file" | sed '1d;$d')
         trimmed_body=$(echo "$body_section" | tr -d '[:space:]')
         if [[ -z "$trimmed_body" ]]; then
