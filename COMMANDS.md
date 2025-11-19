@@ -9,7 +9,7 @@
   - Creates an "atomic note" instantly. The text is the body of the note. No editor is launched.
 
 - `note +keyword`
-  - Creates a new note in the editor, with keyword metadata for search and linking; multiple keywords permitted.
+  - Creates a new note in the editor, with keyword metadata for search and linking; multiple keywords permitted, and with atomic notes.
 
 - `note @some-directory`
   - Creates a new note in the editor, filed under the `some-subdirectory` subdirectory.
@@ -20,11 +20,13 @@
   - `note -template` -or- shorthand: `note %`
     - Launches a fuzzy search of the template folder for template selection.
 
-
 ## Flags & Options
 
-- `-v`
+- `note -v`
   - Opens the new note in "vault context". This opens your entire vault folder in the editor with the new note active, giving you access to the file tree and vault-wide search.
+
+- `note -vi` -or- `note -vim`
+  - Opens the new note in a vim register. Can be used after taking an 'atomic' note for further editing.
 
 - `note -daily`
   - Finds or creates the note for the current day in your designated daily notes folder.
