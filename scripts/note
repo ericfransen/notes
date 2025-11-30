@@ -8,17 +8,15 @@ debug_log() {
 
 extract_title_from_note() {
     local note_string="$1"
-    # Get the first 7 words of the note string
-    local first_seven_words=$(echo "$note_string" | cut -d' ' -f1-7)
+    # Get the first line of the note string
+    local first_line=$(echo "$note_string" | head -n 1)
 
-    # Check if these first 7 words contain a colon
-    if [[ "$first_seven_words" == *":"* ]]; then
-        # Extract the part before the colon from these 7 words
-        local text_before_colon_in_seven_words="${first_seven_words%%:*}"
-        # Then take the first 5 words of that extracted part
-        echo "$text_before_colon_in_seven_words" | cut -d' ' -f1-5
+    # Check if the first line contains a colon
+    if [[ "$first_line" == *":"* ]]; then
+        # Extract the part before the colon from the first line
+        echo "${first_line%%:*}"
     else
-        # If no colon in the first 7 words, return empty
+        # If no colon in the first line, return empty
         echo ""
     fi
 }
@@ -50,11 +48,6 @@ USE_FZF_TEMPLATE=false
 TEMPLATE_ALIAS=""
 OPEN_IN_VIM="false"
 
-if [ "$DEBUG_MODE" = "true" ]; then
-    set -x
-fi
-
-# The first utility command (e.g., -vault, -debug) is also captured here
 COMMAND="" # Initialize COMMAND here
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -136,19 +129,7 @@ if [ -z "$COMMAND" ] && [ ${#OTHER_ARGS[@]} -gt 0 ] && [[ "${OTHER_ARGS[0]}" == 
 fi
 
 # The first non-flag argument that is not a command is the note string for atomic notes
-NOTE_STRING="${OTHER_ARGS[0]}"
-
-# --- For all other commands, source the config ---
-# This line is redundant and should be removed as config is sourced at the beginning.
-# if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
-# source "$CONFIG_FILE"
-
-# --- Command Routing ---
-# Allow for commands with a leading hyphen
-# This is now handled in the argument parsing, so this block is redundant.
-# if [[ "$COMMAND" == -* ]]; then
-#     COMMAND="${COMMAND#-}"
-# fi
+NOTE_STRING="${OTHER_ARGS[*]}"
 
 # --- Template Selection Logic ---
 # Default to the standard note template
@@ -190,40 +171,37 @@ if [ "$USE_FZF_TEMPLATE" = true ] || [ "$COMMAND" == "daily" ] || [ -n "$TEMPLAT
     echo "Using [$(basename "$TEMPLATE_PATH" .md)] template from _notes/$(echo "$TEMPLATE_PATH" | sed "s|$PROJECT_ROOT/||")"
 fi
 
-if [[ "$COMMAND" == "cmd" ]]; then
-    cat "$PROJECT_ROOT/COMMANDS.md"
-    exit 0
-fi
-
-if [[ "$COMMAND" == "vault" ]]; then
-    if [ -n "$VAULT_PATH" ]; then
-        echo "Your vault is currently set to: $VAULT_PATH"
-        read -p "Do you want to change it? (y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            read -p "Enter the new path to your vault: " new_vault_path
-            # Update the config file
-            sed -i '' "s|VAULT_PATH=.*|VAULT_PATH=\"$new_vault_path\"|" "$CONFIG_FILE"
-            echo "Vault path updated to: $new_vault_path"
-        else
-            read -p "Do you want to open the vault? (y/n) " -n 1 -r
+case "$COMMAND" in
+    cmd)
+        cat "$PROJECT_ROOT/COMMANDS.md"
+        exit 0
+        ;;
+    vault)
+        if [ -n "$VAULT_PATH" ]; then
+            echo "Your vault is currently set to: $VAULT_PATH"
+            read -p "Do you want to change it? (y/n) " -n 1 -r
             echo
             if [[ $REPLY =~ ^[Yy]$ ]]; then
-                "$EDITOR_CMD" "$VAULT_PATH"
+                read -p "Enter the new path to your vault: " new_vault_path
+                # Update the config file
+                sed -i '' "s|VAULT_PATH=.*|VAULT_PATH=\"$new_vault_path\"|" "$CONFIG_FILE"
+                echo "Vault path updated to: $new_vault_path"
+            else
+                read -p "Do you want to open the vault? (y/n) " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    "$EDITOR_CMD" "$VAULT_PATH"
+                fi
             fi
+        else
+            echo "Your vault is not yet configured."
+            read -p "Enter the path to your vault: " new_vault_path
+            # Update the config file
+            echo "VAULT_PATH=\"$new_vault_path\"" >> "$CONFIG_FILE"
+            echo "Vault path set to: $new_vault_path"
         fi
-    else
-        echo "Your vault is not yet configured."
-        read -p "Enter the path to your vault: " new_vault_path
-        # Update the config file
-        echo "VAULT_PATH=\"$new_vault_path\"" >> "$CONFIG_FILE"
-        echo "Vault path set to: $new_vault_path"
-    fi
-    exit 0
-fi
-
-# --- Handle all other utility commands ---
-case "$COMMAND" in
+        exit 0
+        ;;
     daily)
         TODAY_DATE=$(date +'%y-%m-%d')
         # Search for any daily note for today, regardless of the title part
@@ -321,7 +299,9 @@ else
     STATUS="inbox"
 fi
 
-to_kebab_case() { echo "$1" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'; }
+to_kebab_case() {
+    echo "$1" | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+|-+$//g' | tr '[:upper:]' '[:lower:]'
+}
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d__%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
@@ -335,18 +315,17 @@ elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then # Set title for meeting notes
     TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
     BODY="$NOTE_STRING"
 else
-    TITLE="untitled" # <--- This is the culprit
+    TITLE="untitled"
     BODY=""
 fi
 
 if [[ -n "$CUSTOM_TITLE" ]]; then
     TITLE="$CUSTOM_TITLE"
+    BODY="$NOTE_STRING"
 elif [[ -n "$NOTE_STRING" ]]; then
-    # If no custom title, try to extract from note string
     EXTRACTED_TITLE=$(extract_title_from_note "$NOTE_STRING")
     if [[ -n "$EXTRACTED_TITLE" ]]; then
         TITLE="$EXTRACTED_TITLE"
-        # The rest of the string becomes the body
         BODY="${NOTE_STRING#*: }"
     else
         TITLE="untitled"
@@ -376,30 +355,24 @@ else
 fi
 TARGET_DIR="${VAULT_PATH}/${SUBDIR}"; FILEPATH="${TARGET_DIR}/${FILENAME}"; mkdir -p "$TARGET_DIR"
 
+get_cursor_line_number() {
+    local content="$1"
+    local body_line_number=$(echo "$content" | grep -n "## Body" | cut -d: -f1)
+    if [ -n "$body_line_number" ]; then
+        echo $((body_line_number + 1))
+    else
+        echo 1
+    fi
+}
+
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
-    # echo "timestamp: $TIMESTAMP"
-    # echo "title: $TITLE"
-    # echo "keywords: $KEYWORDS_STRING"
-    # echo "body: $BODY"
-    # echo "meta: $METADATA_YAML"
-    # echo "status: $STATUS"
-    export BODY=$(printf "%b" "$BODY")
-    CONTENT=$(cat "$TEMPLATE_PATH" | awk -v ts="$TIMESTAMP" -v ti="$TITLE" -v kw="$KEYWORDS_STRING" -v meta="$METADATA_YAML" -v status="$STATUS" -v day="$DAY_OF_WEEK" -v folder="$SUBDIR" '{
-        gsub(/<% timestamp %>/, ts);
-        gsub(/<% title %>/, ti);
-        gsub(/<% keywords %>/, kw);
-        gsub(/<% body %>/, ENVIRON["BODY"]);
-        gsub(/<% metadata %>/, meta);
-        gsub(/<% status %>/, status);
-        gsub(/<% day %>/, day);
-        gsub(/<% folder %>/, folder);
-        print;
-    }')
-    echo "$CONTENT" > "$FILEPATH"
+    export TIMESTAMP TITLE KEYWORDS_STRING METADATA_YAML STATUS DAY_OF_WEEK SUBDIR BODY
+    CONTENT=$(cat "$TEMPLATE_PATH")
+    CONTENT=$(perl -pe 's/<% timestamp %>/$ENV{TIMESTAMP}/; s/<% title %>/$ENV{TITLE}/; s/<% keywords %>/$ENV{KEYWORDS_STRING}/; s/<% metadata %>/$ENV{METADATA_YAML}/; s/<% status %>/$ENV{STATUS}/; s/<% day %>/$ENV{DAY_OF_WEEK}/; s/<% folder %>/$ENV{SUBDIR}/; s#<% body %>#$ENV{BODY}#' <<< "$CONTENT")
+    printf "%b" "$CONTENT" > "$FILEPATH"
 fi
 
-body_line_number=$(echo "$CONTENT" | grep -n "## Body" | cut -d: -f1)
-cursor_line_number=$((body_line_number + 1))
+cursor_line_number=$(get_cursor_line_number "$CONTENT")
 
 echo "Note created: $FILEPATH"
 

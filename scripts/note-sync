@@ -23,12 +23,12 @@ update_untitled_notes() {
     find . -name "*untitled*.md" -type f -newer /tmp/start_of_day -print0 | while IFS= read -r -d $'\0' file; do
         title=$(grep -m 1 '^title: ' "$file" | sed 's/^title: //')
         if [[ -n "$title" ]] && [[ "$title" != "untitled" ]]; then
-            kebab_title=$(echo "$title" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]')
+            kebab_title=$(echo "$title" | sed -E 's/.{15}//' | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]')
             
             #get the timestamp from the filename
             timestamp=$(basename "$file" | cut -d'_' -f1-2)
             
-            new_filename="${timestamp}_${kebab_title}.md"
+            new_filename="${timestamp}__${kebab_title}.md"
             
             #get the directory of the file
             dir=$(dirname "$file")
@@ -61,12 +61,12 @@ rename_all_untitled_notes() {
     find . -name "*untitled*.md" -type f -print0 | while IFS= read -r -d $'\0' file; do
         title=$(grep -m 1 '^title: ' "$file" | sed 's/^title: //')
         if [[ -n "$title" ]] && [[ "$title" != "untitled" ]]; then
-            kebab_title=$(echo "$title" | cut -d' ' -f1-5 | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]')
+            kebab_title=$(echo "$title" | sed -E 's/.{15}//' | iconv -t ascii//TRANSLIT | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr '[:upper:]' '[:lower:]')
             
             #get the timestamp from the filename
             timestamp=$(basename "$file" | cut -d'_' -f1-2)
             
-            new_filename="${timestamp}_${kebab_title}.md"
+            new_filename="${timestamp}__${kebab_title}.md"
             
             #get the directory of the file
             dir=$(dirname "$file")
