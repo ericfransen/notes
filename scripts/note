@@ -33,8 +33,10 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 CONFIG_FILE="$PROJECT_ROOT/config.sh"
 
 # --- Source Config ---
-if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
-source "$CONFIG_FILE"
+if [ -z "$VAULT_PATH" ]; then
+    if [ ! -f "$CONFIG_FILE" ]; then echo "Config not found. Run 'bash scripts/setup.sh'" >&2; exit 1; fi
+    source "$CONFIG_FILE"
+fi
 
 # --- Argument Parsing ---
 DEBUG_MODE="false"
@@ -49,6 +51,7 @@ TEMPLATE_ALIAS=""
 OPEN_IN_VIM="false"
 
 COMMAND="" # Initialize COMMAND here
+NEW_ARGS=()
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -debug)
@@ -108,6 +111,9 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     %*)
       TEMPLATE_ALIAS="${1#%}"
+      if [ -z "$COMMAND" ]; then
+        COMMAND="${1#%}"
+      fi
       shift
       ;;
     -daily|-vault|-debug|-git-setup|-sync-status|-code|-obsidian|-rename-all-untitled|-yesterday|-cmd)
@@ -115,11 +121,13 @@ while [[ "$#" -gt 0 ]]; do
       shift
       ;;
     *)
-      OTHER_ARGS+=("$1")
+      NEW_ARGS+=("$1")
       shift
       ;;
   esac
 done
+set -- "${NEW_ARGS[@]}"
+OTHER_ARGS=("$@")
 
 # If COMMAND was not set by a specific flag, and there are other args, and the first other arg starts with '-', it's a command.
 if [ -z "$COMMAND" ] && [ ${#OTHER_ARGS[@]} -gt 0 ] && [[ "${OTHER_ARGS[0]}" == -* ]]; then
@@ -129,7 +137,9 @@ if [ -z "$COMMAND" ] && [ ${#OTHER_ARGS[@]} -gt 0 ] && [[ "${OTHER_ARGS[0]}" == 
 fi
 
 # The first non-flag argument that is not a command is the note string for atomic notes
-NOTE_STRING="${OTHER_ARGS[*]}"
+if [ ${#OTHER_ARGS[@]} -gt 0 ]; then
+    NOTE_STRING="${OTHER_ARGS[*]}"
+fi
 
 # --- Template Selection Logic ---
 # Default to the standard note template
@@ -305,20 +315,9 @@ to_kebab_case() {
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d__%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
-DAY_ABBREVIATION=$(date +'%a' | tr '[:lower:]' '[:upper:]') # Get 3-letter day abbreviation
-TITLE=""; BODY=""; KEYWORDS_STRING=""
+DAY_ABBREVIATION=$(date +'%a' | perl -ne 'print ucfirst(lc)')
+KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
-if [ "$COMMAND" == "daily" ]; then
-    TITLE="${DAY_ABBREVIATION}_daily"
-elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then # Set title for meeting notes
-    TITLE="meeting"
-    TITLE=$(echo "$NOTE_STRING" | cut -c 1-80)
-    BODY="$NOTE_STRING"
-else
-    TITLE="untitled"
-    BODY=""
-fi
-
 if [[ -n "$CUSTOM_TITLE" ]]; then
     TITLE="$CUSTOM_TITLE"
     BODY="$NOTE_STRING"
@@ -327,23 +326,43 @@ elif [[ -n "$NOTE_STRING" ]]; then
     if [[ -n "$EXTRACTED_TITLE" ]]; then
         TITLE="$EXTRACTED_TITLE"
         BODY="${NOTE_STRING#*: }"
-    else
+    elif [ -z "$TITLE" ]; then
         TITLE="untitled"
         BODY="$NOTE_STRING"
     fi
+else
+    if [ -z "$TITLE" ]; then
+        TITLE="untitled"
+        BODY=""
+    fi
 fi
 
-KEBAB_TITLE=$(to_kebab_case "$TITLE")
+if [ "$TEMPLATE_ALIAS" == "daily" ]; then
+    mkdir -p "${VAULT_PATH}/${DAILY_DIR}"
+    TITLE="${DAY_ABBREVIATION}_daily"
+    BODY=""
+elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then # Set title for meeting notes
+    TITLE="meeting"
+    BODY="$NOTE_STRING"
+fi
+
+if [ "$TEMPLATE_ALIAS" == "meeting" ]; then
+    KEBAB_TITLE="meeting"
+else
+    KEBAB_TITLE=$(to_kebab_case "$TITLE")
+fi
 FILENAME_PART=""
 
-if [ "$COMMAND" == "daily" ]; then
+if [ "$TEMPLATE_ALIAS" == "daily" ]; then
     FILENAME_PART="${DAY_ABBREVIATION}_daily"
 elif [ "$TEMPLATE_ALIAS" == "meeting" ]; then
     FILENAME_PART="mtg"
 fi
 
 if [ -n "$FILENAME_PART" ]; then
-    if [ "$COMMAND" == "daily" ]; then
+    if [ "$TEMPLATE_ALIAS" == "meeting" ]; then
+        FILENAME="${FILE_TIMESTAMP}__${FILENAME_PART}.md"
+    elif [ "$COMMAND" == "daily" ]; then
         FILENAME="${FILE_TIMESTAMP}__${FILENAME_PART}.md"
     elif [ -n "$KEBAB_TITLE" ] && [ "$KEBAB_TITLE" != "$(to_kebab_case "$FILENAME_PART")" ]; then
         FILENAME="${FILE_TIMESTAMP}__${FILENAME_PART}-${KEBAB_TITLE}.md"
@@ -366,9 +385,9 @@ get_cursor_line_number() {
 }
 
 if [ ! -f "$TEMPLATE_PATH" ]; then echo "Warning: Template not found." >&2; touch "$FILEPATH"; else
+    export TIMESTAMP TITLE KEYWORDS_STRING METADATA_YAML STATUS DAY_OF_WEEK SUBDIR
     export TIMESTAMP TITLE KEYWORDS_STRING METADATA_YAML STATUS DAY_OF_WEEK SUBDIR BODY
-    CONTENT=$(cat "$TEMPLATE_PATH")
-    CONTENT=$(perl -pe 's/<% timestamp %>/$ENV{TIMESTAMP}/; s/<% title %>/$ENV{TITLE}/; s/<% keywords %>/$ENV{KEYWORDS_STRING}/; s/<% metadata %>/$ENV{METADATA_YAML}/; s/<% status %>/$ENV{STATUS}/; s/<% day %>/$ENV{DAY_OF_WEEK}/; s/<% folder %>/$ENV{SUBDIR}/; s#<% body %>#$ENV{BODY}#' <<< "$CONTENT")
+    CONTENT=$(envsubst <<< "$(cat "$TEMPLATE_PATH")")
     printf "%b" "$CONTENT" > "$FILEPATH"
 fi
 

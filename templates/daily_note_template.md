@@ -1,8 +1,8 @@
 ---
-date: <% timestamp %>
-title: <% title %>
+date: ${TIMESTAMP}
+title: ${TITLE}
 keywords: daily-note
-<% metadata %>
+${METADATA}
 ---
 
 ## Today's Goal

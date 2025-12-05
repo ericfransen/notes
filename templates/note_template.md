@@ -1,15 +1,15 @@
 ---
-date: <% timestamp %>
-day: <% day %>
-title: <% title %>
-folder: <% folder %>
-keywords: <% keywords %>
-status: <% status %>
-<% metadata %>
+date: ${TIMESTAMP}
+day: ${DAY_OF_WEEK}
+title: ${TITLE}
+folder: ${SUBDIR}
+keywords: ${KEYWORDS_STRING}
+status: ${STATUS}
+${METADATA_YAML}
 ---
 
 ## Body
-<% body %>
+${BODY}
 
 ---
 ## Connections & Context

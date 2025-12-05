@@ -5,7 +5,7 @@ rating:
 status: 
 ---
 
-# <% title %>
+# ${TITLE}
 
 ## Synopsis
 
