@@ -182,6 +182,14 @@ This system is designed to work with an existing notes vault that is already tra
 
 The script will automatically detect that your vault is already a Git repository with a remote configured and will skip all the creation steps, seamlessly connecting your tools to your existing notes.
 
+## Development & Testing
+
+To run the test suite and ensure everything is working correctly:
+
+```sh
+bash test/test.sh
+```
+
 ## Troubleshooting
 
 If your nightly sync fails, you can check the log file at `.sync_log` in this project's directory.
