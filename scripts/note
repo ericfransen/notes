@@ -315,7 +315,7 @@ to_kebab_case() {
 
 TIMESTAMP=$(date +'%y-%m-%d %H:%M:%S'); FILE_TIMESTAMP=$(date +'%y-%m-%d__%H-%M')
 DAY_OF_WEEK=$(date +'%A') # Get the full weekday name
-DAY_ABBREVIATION=$(date +'%a' | perl -ne 'print ucfirst(lc)')
+DAY_ABBREVIATION=$(date +'%a' | tr '[:lower:]' '[:upper:]')
 KEYWORDS_STRING=""
 if [ ${#KEYWORDS[@]} -gt 0 ]; then KEYWORDS_STRING=$(IFS=,; echo "${KEYWORDS[*]}"); fi
 if [[ -n "$CUSTOM_TITLE" ]]; then

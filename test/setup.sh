@@ -16,7 +16,7 @@ setup() {
     export DAILY_DIR="daily"
 
     # --- Set the EDITOR_CMD variable ---
-    export EDITOR_CMD="vim"
+    export EDITOR_CMD="echo"
 
     # --- Set the VAULT_NAME variable ---
     export VAULT_NAME="test-vault"
