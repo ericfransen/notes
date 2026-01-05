@@ -4,11 +4,14 @@
 echo "--- Running Daily Note Creation Test ---"
 # Remove existing daily notes
 find "$VAULT_PATH/daily" -name "*.md" -delete
-"$PROJECT_ROOT/scripts/note" -daily
+"$PROJECT_ROOT/scripts/note" -daily --weather "Sunny"
 
 # --- Assertions ---
 # Find the created file
 note_file=$(find "$VAULT_PATH/daily" -name "*.md" -print -quit)
 assert_file_exists "$note_file"
 assert_file_contains "$note_file" "title: $(date +'%a' | perl -ne 'print ucfirst(lc)')_daily"
+assert_file_contains "$note_file" "day: $(date +'%A')"
+assert_file_contains "$note_file" "folder: daily"
+assert_file_contains "$note_file" "weather: \"Sunny\""
 echo "--- Daily Note Creation Test Passed ---"
