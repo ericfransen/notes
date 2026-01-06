@@ -81,6 +81,22 @@ if [ -z "$DAILY_DIR" ]; then
     echo "DAILY_DIR=\"$daily_dir\"" >> "$CONFIG_FILE"
 fi
 
+# --- Configure Cleanup Empty Notes ---
+if ! grep -q "CLEANUP_EMPTY_NOTES" "$CONFIG_FILE"; then
+    echo "" >> "$CONFIG_FILE"
+    echo "# --- Cleanup Empty Notes ---" >> "$CONFIG_FILE"
+    echo "# Set to \"true\" to automatically delete notes with empty bodies during sync." >> "$CONFIG_FILE"
+    
+    read -p "Do you want to automatically delete empty notes during sync? (y/N) " enable_cleanup
+    if [[ "$enable_cleanup" =~ ^[yY]$ ]]; then
+        echo "CLEANUP_EMPTY_NOTES=\"true\"" >> "$CONFIG_FILE"
+        echo "✓ Cleanup of empty notes enabled."
+    else
+        echo "CLEANUP_EMPTY_NOTES=\"false\"" >> "$CONFIG_FILE"
+        echo "✓ Cleanup of empty notes disabled (default)."
+    fi
+fi
+
 # Create the daily notes directory if it doesn't exist
 if [ ! -d "$VAULT_PATH/$DAILY_DIR" ]; then
     mkdir -p "$VAULT_PATH/$DAILY_DIR"

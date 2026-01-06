@@ -1,8 +1,10 @@
 ---
-date: <% timestamp %>
-title: <% title %>
+date: ${TIMESTAMP}
+day: ${DAY_OF_WEEK}
+title: ${TITLE}
+folder: ${SUBDIR}
 keywords: daily-note
-<% metadata %>
+${METADATA_YAML}
 ---
 
 ## Today's Goal
