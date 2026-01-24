@@ -28,6 +28,11 @@ meeting templates/meetings/meeting_template.md"
     # --- Set the TEMPLATE_OUTPUT_DIRS variable ---
     export TEMPLATE_OUTPUT_DIRS="daily daily
 meeting meetings"
+
+    # --- Configure Git for Tests ---
+    # Required for git commits to work in CI/fresh environments
+    git config --global user.email "test@example.com"
+    git config --global user.name "Test User"
 }
 
 setup
