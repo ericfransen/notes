@@ -274,7 +274,13 @@ case "$COMMAND" in
         exit 0
         ;;
     yesterday)
-        YESTERDAY=$(date -v -1d +'%y-%m-%d')
+        if date -v -1d >/dev/null 2>&1; then
+            # BSD date (macOS)
+            YESTERDAY=$(date -v -1d +'%y-%m-%d')
+        else
+            # GNU date (Linux)
+            YESTERDAY=$(date -d "yesterday" +'%y-%m-%d')
+        fi
         YESTERDAY_NOTE=$(find "$VAULT_PATH/$DAILY_DIR" -name "*$YESTERDAY*.md" -print -quit)
 
         if [ -n "$YESTERDAY_NOTE" ]; then

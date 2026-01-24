@@ -37,7 +37,15 @@ fi
 # --- Test Yesterday (Exists) ---
 echo "--- Running Yesterday (Exists) Test ---"
 find "$VAULT_PATH/daily" -name "*.md" -delete
-YESTERDAY_DATE=$(date -v -1d +'%y-%m-%d')
+
+if date -v -1d >/dev/null 2>&1; then
+    # BSD date (macOS)
+    YESTERDAY_DATE=$(date -v -1d +'%y-%m-%d')
+else
+    # GNU date (Linux)
+    YESTERDAY_DATE=$(date -d "yesterday" +'%y-%m-%d')
+fi
+
 YESTERDAY_FILE="$VAULT_PATH/daily/${YESTERDAY_DATE}__Sun_daily.md"
 touch "$YESTERDAY_FILE"
 
@@ -54,7 +62,13 @@ fi
 echo "--- Running Yesterday (Fallback) Test ---"
 find "$VAULT_PATH/daily" -name "*.md" -delete
 # Create a note from 5 days ago
-OLDER_DATE=$(date -v -5d +'%y-%m-%d')
+if date -v -5d >/dev/null 2>&1; then
+    # BSD date (macOS)
+    OLDER_DATE=$(date -v -5d +'%y-%m-%d')
+else
+    # GNU date (Linux)
+    OLDER_DATE=$(date -d "5 days ago" +'%y-%m-%d')
+fi
 OLDER_FILE="$VAULT_PATH/daily/${OLDER_DATE}__Tue_daily.md"
 touch "$OLDER_FILE"
 
