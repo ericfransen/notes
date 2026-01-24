@@ -1,0 +1,29 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Environment
+      run: |
+        # Install dependencies if needed. 
+        # The script uses standard bash tools (find, sed, awk, grep, etc.)
+        # and 'envsubst' (gettext-base), 'fzf' (optional but good to have)
+        sudo apt-get update
+        sudo apt-get install -y gettext-base fzf
+
+    - name: Run Tests
+      run: |
+        bash test/test.sh
