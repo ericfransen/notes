@@ -195,4 +195,4 @@ If your nightly sync fails, you can check the log file at `.sync_log` in this pr
 - **Error: "Your local branch is behind the remote"**:
     - To fix this, navigate to your vault directory in the terminal and run `git pull`.
 - **Error: "Merge conflict detected"**:
-    - To fix this, open your vault folder in a code editor, fix the file(s) with conflict markers (`<<<<<`, `>>>>>`), edit them to resolve the conflict, and then manually commit the changes.
+    - To fix this, open your vault folder in a code editor, fix the file(s) with conflict, and then manually commit the changes.
