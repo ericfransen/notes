@@ -1,7 +1,7 @@
 ---
 date: ${TIMESTAMP}
 day: ${DAY_OF_WEEK}
-Title: ${TITLE}
+Title: "${TITLE}"
 folder: ${SUBDIR}
 tags: meeting
 attendees:

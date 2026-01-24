@@ -1,7 +1,7 @@
 ---
 date: ${TIMESTAMP}
 day: ${DAY_OF_WEEK}
-title: ${TITLE}
+title: "${TITLE}"
 folder: ${SUBDIR}
 keywords: ${KEYWORDS_STRING}
 status: ${STATUS}

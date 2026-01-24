@@ -8,5 +8,5 @@ echo "--- Running Untitled Note Creation Test ---"
 # Find the created file
 note_file=$(find "$VAULT_PATH/00__Inbox" -name "*untitled*.md" -print -quit)
 assert_file_exists "$note_file"
-assert_file_contains "$note_file" "title: untitled"
+assert_file_contains "$note_file" "title: \"untitled\""
 echo "--- Untitled Note Creation Test Passed ---"

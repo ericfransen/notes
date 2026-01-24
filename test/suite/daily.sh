@@ -10,7 +10,7 @@ find "$VAULT_PATH/daily" -name "*.md" -delete
 # Find the created file
 note_file=$(find "$VAULT_PATH/daily" -name "*.md" -print -quit)
 assert_file_exists "$note_file"
-assert_file_contains "$note_file" "title: $(date +'%a' | tr '[:lower:]' '[:upper:]')_daily"
+assert_file_contains "$note_file" "title: \"$(date +'%a' | tr '[:lower:]' '[:upper:]')_daily\""
 assert_file_contains "$note_file" "day: $(date +'%A')"
 assert_file_contains "$note_file" "folder: daily"
 assert_file_contains "$note_file" "weather: \"Sunny\""
