@@ -104,7 +104,7 @@ if [ ! -d "$VAULT_PATH/$DAILY_DIR" ]; then
 fi
 echo ""
 
-# --- 4. Set up Git Repository ---
+# --- 4. Set up Git Repository & Encryption ---
 echo_bold "Step 3: Set up Private Git Repository for Notes"
 if [ -d "$VAULT_PATH/.git" ]; then
     echo "✓ Your vault at '$VAULT_PATH' is already a Git repository."
@@ -114,6 +114,59 @@ else
         (cd "$VAULT_PATH" && git init)
         echo "Initialized a new Git repository for your notes."
         echo_green "To link a private GitHub repo for backup, run 'note -git-setup' at any time."
+    fi
+fi
+
+if [ -d "$VAULT_PATH/.git" ]; then
+    read -p "Enable encryption for remote backup? (y/N) " enable_enc
+    if [[ "$enable_enc" =~ ^[yY]$ ]]; then
+        if ! command -v git-crypt &> /dev/null; then
+            echo "git-crypt is not installed."
+            read -p "Do you want to install it via Homebrew? (Y/n) " install_crypt
+            if [[ ! "$install_crypt" =~ ^[nN]$ ]]; then
+                brew install git-crypt
+            else
+                echo "Skipping encryption setup because git-crypt is required."
+                enable_enc="n"
+            fi
+        fi
+
+        if [[ "$enable_enc" =~ ^[yY]$ ]] && command -v git-crypt &> /dev/null; then
+            if [ ! -d "$VAULT_PATH/.git/git-crypt" ]; then
+                echo "Initializing git-crypt in vault..."
+                (cd "$VAULT_PATH" && git-crypt init)
+                
+                # Setup .gitattributes
+                echo "*.md filter=git-crypt diff=git-crypt" >> "$VAULT_PATH/.gitattributes"
+                (cd "$VAULT_PATH" && git add .gitattributes)
+                
+                # Export key and save to config.sh
+                KEY_TMP_FILE="$PROJECT_ROOT/.tmp-git-crypt-key"
+                (cd "$VAULT_PATH" && git-crypt export-key "$KEY_TMP_FILE")
+                
+                if [ -f "$KEY_TMP_FILE" ]; then
+                    KEY_B64=$(base64 < "$KEY_TMP_FILE" | tr -d '\n')
+                    rm -f "$KEY_TMP_FILE"
+                    
+                    echo "" >> "$CONFIG_FILE"
+                    echo "# --- Git-Crypt Backup Key ---" >> "$CONFIG_FILE"
+                    echo "# IMPORTANT: Save this key string in a secure location (e.g., password manager)." >> "$CONFIG_FILE"
+                    echo "# You WILL need it to decrypt your remote backups if you lose this machine." >> "$CONFIG_FILE"
+                    echo "# To recover on a new machine:" >> "$CONFIG_FILE"
+                    echo "#   echo \"\$GIT_CRYPT_KEY_B64\" | base64 --decode > git-crypt-key" >> "$CONFIG_FILE"
+                    echo "#   git-crypt unlock git-crypt-key" >> "$CONFIG_FILE"
+                    echo "GIT_CRYPT_KEY_B64=\"\$KEY_B64\"" >> "$CONFIG_FILE"
+                    
+                    echo_green "✓ Encryption enabled! .gitattributes configured to encrypt .md files."
+                    echo_bold "⚠️  CRITICAL: The encryption key has been saved to your config.sh file."
+                    echo_bold "⚠️  Please open config.sh, copy the GIT_CRYPT_KEY_B64 value, and save it in a password manager!"
+                else
+                    echo "✗ Failed to export git-crypt key."
+                fi
+            else
+                echo "✓ git-crypt is already initialized in this vault."
+            fi
+        fi
     fi
 fi
 echo ""
