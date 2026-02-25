@@ -22,7 +22,7 @@ jobs:
         # The script uses standard bash tools (find, sed, awk, grep, etc.)
         # and 'envsubst' (gettext-base), 'fzf' (optional but good to have)
         sudo apt-get update
-        sudo apt-get install -y gettext-base fzf
+        sudo apt-get install -y gettext-base fzf git-crypt
 
     - name: Run Tests
       run: |

@@ -12,7 +12,7 @@ chmod +x "$PROJECT_ROOT/scripts/note" "$PROJECT_ROOT/scripts/note-sync" "$PROJEC
 
 # --- 1. Create Initial Config File ---
 echo_bold "Step 1: Initializing Configuration"
-CONFIG_FILE="$PROJECT_ROOT/config.sh"
+CONFIG_FILE="${CONFIG_FILE:-$PROJECT_ROOT/config.sh}"
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "# Main configuration for the note-taking system" > "$CONFIG_FILE"
     echo "" >> "$CONFIG_FILE"
@@ -186,7 +186,7 @@ if [ -d "$VAULT_PATH/.git" ]; then
                         echo "# To recover on a new machine:" >> "$CONFIG_FILE"
                         echo "#   echo \"\$GIT_CRYPT_KEY_B64\" | base64 --decode > git-crypt-key" >> "$CONFIG_FILE"
                         echo "#   git-crypt unlock git-crypt-key" >> "$CONFIG_FILE"
-                        echo "GIT_CRYPT_KEY_B64=\"\$KEY_B64\"" >> "$CONFIG_FILE"
+                        echo "GIT_CRYPT_KEY_B64=\"$KEY_B64\"" >> "$CONFIG_FILE"
                         
                         echo_green "✓ Encryption enabled! .gitattributes configured to encrypt .md files."
                         echo_bold "⚠️  CRITICAL: The encryption key has been saved to your config.sh file."
