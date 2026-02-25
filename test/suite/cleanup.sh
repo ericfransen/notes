@@ -26,7 +26,7 @@ echo "---" >> "$EMPTY_NOTE"
 
 # --- Test Case 1: CLEANUP_EMPTY_NOTES=false (Default) ---
 echo "Test Case 1: Cleanup Disabled"
-export CLEANUP_EMPTY_NOTES="false"
+echo 'CLEANUP_EMPTY_NOTES="false"' > "$CONFIG_FILE"
 "$PROJECT_ROOT/scripts/note-sync"
 
 assert_file_exists "$VALID_NOTE"
@@ -35,7 +35,7 @@ echo "✓ Cleanup disabled: Preserved both notes."
 
 # --- Test Case 2: CLEANUP_EMPTY_NOTES=true ---
 echo "Test Case 2: Cleanup Enabled"
-export CLEANUP_EMPTY_NOTES="true"
+echo 'CLEANUP_EMPTY_NOTES="true"' > "$CONFIG_FILE"
 "$PROJECT_ROOT/scripts/note-sync"
 
 assert_file_exists "$VALID_NOTE"

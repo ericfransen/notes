@@ -36,7 +36,7 @@ done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 PROJECT_ROOT="$SCRIPT_DIR/.."
 if [ -z "$CONFIG_FILE" ]; then
-    CONFIG_FILE="$PROJECT_ROOT/config.sh"
+    CONFIG_FILE="${CONFIG_FILE:-$PROJECT_ROOT/config.sh}"
 fi
 
 # --- Source Config ---
