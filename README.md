@@ -43,6 +43,7 @@ This system is built on the principle of separating the **tool** (this public re
 - **Automated Repo Creation**: If you have the GitHub CLI (`gh`) installed, the setup script can automatically create a private repository on GitHub for you.
 - **Self-Contained**: All scripts and configuration live within this single repository.
 - **Smart Sync**: An optional local cron job syncs changes to your private notes repository at 11:59 PM local time, but only if notes were changed that day.
+- **Encrypted Remote Vault**: An optional encryption of your GitHub notes vault.
 
 ## Prerequisites
 
@@ -162,6 +163,15 @@ This system provides a single main script, `note`, with several commands and fla
         - The GitHub CLI will store this token securely in your user's configuration file (~/.config/gh/hosts.yml). 
         - When your cron job runs the note script, which then calls `git push` or `gh repo create`, the GitHub CLI will retrieve and use this token automatically.
 
+## End-to-End Encryption (Optional)
+
+This system supports transparent, end-to-end encryption of your notes using [git-crypt](https://github.com/AGWA/git-crypt). This ensures that while your notes are plain text locally, they are fully encrypted before being pushed to your remote Git repo.
+
+- **How it works**: Encryption is handled transparently by Git. You work on your notes normally, and `git-crypt` encrypts them on `git push` and decrypts them on `git pull`.
+- **Enabling Encryption**: Run `bash scripts/setup.sh` and select `y` when prompted to enable encryption.
+- **The Recovery Key**: When encryption is enabled, a base64-encoded secret key is saved to your `config.sh`.
+- **⚠️ CRITICAL**: You **MUST** save this key string in a secure location (like a password manager). If you lose this key and your local machine, your remote backups are **unrecoverable**.
+
 ## Setting Up on a New Computer
 
 This system is designed to work with an existing notes vault that is already tracked in a private remote Git repository.
@@ -169,6 +179,8 @@ This system is designed to work with an existing notes vault that is already tra
 1.  **Clone Your Notes Vault**: On your new computer, first clone your private notes vault from GitHub:
 
     `git clone <your-private-notes-repo-url> ~/notes-vault`
+
+    *Note: If your vault is encrypted, the files will look like scrambled binary data until unlocked.*
 
 2.  **Clone the Tool**: Next, clone this `notes` repository somewhere else:
 
@@ -180,7 +192,8 @@ This system is designed to work with an existing notes vault that is already tra
 
 4.  **Select Your Vault**: When prompted, choose the option to manually enter the path to your vault and provide the location where you cloned it (e.g., `~/notes-vault`).
 
-The script will automatically detect that your vault is already a Git repository with a remote configured and will skip all the creation steps, seamlessly connecting your tools to your existing notes.
+5.  **Unlock Your Vault**: If your vault is encrypted, the setup script will automatically detect this and prompt you to paste your base64 recovery key. Once pasted, it will instantly decrypt your notes and you're ready to go.
+
 
 ## Troubleshooting & Testing
 
