@@ -20,6 +20,9 @@ setup() {
 
     # --- Set the VAULT_NAME variable ---
     export VAULT_NAME="test-vault"
+
+    # --- Set a default CRON_SCHEDULE for tests ---
+    export CRON_SCHEDULE="59 23 * * *"
     
     # --- Set the TEMPLATE_MAPPINGS variable ---
     export TEMPLATE_MAPPINGS="daily templates/daily_note_template.md

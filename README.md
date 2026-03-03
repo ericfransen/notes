@@ -197,6 +197,15 @@ This system is designed to work with an existing notes vault that is already tra
 
 ## Troubleshooting & Testing
 
+### Moved the Project?
+If you move this project to a new directory, the global `note` and `note-sync` commands will break because they are symbolic links to the old location.
+
+To fix this, run the installation script again from the new location:
+```sh
+bash scripts/install.sh
+```
+
+### Run Tests
 To run the test suite:
 
 ```sh

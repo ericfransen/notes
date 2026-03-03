@@ -8,7 +8,12 @@ echo_bold() { echo -e "\033[1m$1\033[0m"; }
 echo_green "Welcome to the Frictionless Note-Taking System Setup!"
 PROJECT_ROOT=$( cd -P "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null 2>&1 && pwd )
 # Fix for the permission denied error
-chmod +x "$PROJECT_ROOT/scripts/note" "$PROJECT_ROOT/scripts/note-sync" "$PROJECT_ROOT/scripts/install.sh"
+chmod +x "$PROJECT_ROOT/scripts/note" "$PROJECT_ROOT/scripts/note-sync" "$PROJECT_ROOT/scripts/install.sh" "$PROJECT_ROOT/scripts/note-shim.sh"
+
+# --- Register Project Root ---
+REGISTRY_DIR="$HOME/.config/note"
+mkdir -p "$REGISTRY_DIR"
+echo "$PROJECT_ROOT" > "$REGISTRY_DIR/root_path"
 
 # --- 1. Create Initial Config File ---
 echo_bold "Step 1: Initializing Configuration"
