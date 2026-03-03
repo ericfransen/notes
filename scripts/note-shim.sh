@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This is a stable 'shim' for the note-taking CLI.
+# This is the stable 'note-shim.sh' for the note-taking CLI.
 # It is installed to /usr/local/bin and finds the actual project using the registry.
 
 REGISTRY_FILE="$HOME/.config/note/root_path"

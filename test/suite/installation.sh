@@ -29,10 +29,14 @@ if [ ! -f "$REGISTRY_FILE" ]; then
 fi
 
 REGISTERED_PATH=$(cat "$REGISTRY_FILE")
-if [[ "$REGISTERED_PATH" != "$PROJECT_ROOT" ]]; then
+# Normalize paths for comparison
+NORMALIZED_EXPECTED=$(cd "$PROJECT_ROOT" && pwd)
+NORMALIZED_ACTUAL=$(cd "$REGISTERED_PATH" && pwd)
+
+if [[ "$NORMALIZED_ACTUAL" != "$NORMALIZED_EXPECTED" ]]; then
     echo "✗ ERROR: Registered path is incorrect."
-    echo "  Expected: $PROJECT_ROOT"
-    echo "  Actual:   $REGISTERED_PATH"
+    echo "  Expected: $NORMALIZED_EXPECTED"
+    echo "  Actual:   $NORMALIZED_ACTUAL"
     exit 1
 fi
 
