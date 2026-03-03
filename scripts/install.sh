@@ -46,7 +46,11 @@ fi
 register_root
 
 echo "Installing stable shims..."
-# We COPY the shim instead of symlinking it, so it's a permanent, stable file
+# We MUST remove any existing symlink FIRST, otherwise 'cp' might follow it and overwrite the project file!
+sudo rm -f "$LINK_NOTE_PATH"
+sudo rm -f "$LINK_SYNC_PATH"
+
+# Now copy the shim as a permanent, stable file
 sudo cp "$SHIM_PATH" "$LINK_NOTE_PATH"
 sudo cp "$SHIM_PATH" "$LINK_SYNC_PATH"
 sudo chmod +x "$LINK_NOTE_PATH" "$LINK_SYNC_PATH"
