@@ -16,7 +16,7 @@ PROJECT_ROOT=$(cat "$REGISTRY_FILE")
 if [ ! -d "$PROJECT_ROOT" ]; then
     echo "Error: The registered project root does not exist: $PROJECT_ROOT" >&2
     echo "It looks like you moved the _notes repository." >&2
-    echo "To fix this, navigate to the new location and run: bash scripts/set-root.sh" >&2
+    echo "To fix this, navigate to the new location and run: bash scripts/install.sh" >&2
     exit 1
 fi
 
